@@ -143,7 +143,7 @@ local function IsRealUppercut(enemyRoot, myRoot)
 	local Velocity = enemyRoot.AssemblyLinearVelocity
 
 	return
-		Velocity.Y > 80
+		Velocity.Y > 40
 		and Velocity.Y < 120
 		and enemyRoot.Position.Y > myRoot.Position.Y + 3
 		and math.abs(Velocity.X) < 60

@@ -56,12 +56,12 @@ local function doTech()
 
     local _, yRotation, _ = originalCFrame:ToOrientation()
 
-    camera.CFrame = CFrame.new(originalCFrame.Position) * CFrame.Angles(0, yRotation + math.rad(180), 0)
-
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 
-    task.wait(0.2)
+    camera.CFrame = CFrame.new(originalCFrame.Position) * CFrame.Angles(0, yRotation + math.rad(180), 0)
+
+    task.wait(0.225)
 
     camera.CFrame = originalCFrame
 end

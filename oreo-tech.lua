@@ -61,7 +61,7 @@ local function doTech()
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 
-    task.wait(0.225)
+    task.wait(0.2)
 
     camera.CFrame = originalCFrame
 end

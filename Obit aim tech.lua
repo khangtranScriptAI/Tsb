@@ -1,15 +1,24 @@
--- TSB Orbit Aim - GUI 50x50 draggable (đã tối giản)
+-- ✅ TSB ORBIT AIM - BẢN ĐẦY ĐỦ & CHI TIẾT NHẤT (Tier 1)
+-- Chỉ hoạt động khi ĐỐI PHƯƠNG bị uppercut
+-- Bấm Q (dash) → Orbit + Body Aim chỉ trong lúc dash → tự ngắt khi dash xong
+-- GUI 50x50 draggable, cooldown 5s, status realtime trên nút
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 
-local ORBIT_SPEED = 7
-local ORBIT_RADIUS = 8
-local UPPER_VEL_THRESHOLD = 25
-local SMOOTHNESS = 0.35
-local COOLDOWN_TIME = 5
+-- ==================== CẤU HÌNH DỄ CHỈNH (Tier 1) ====================
+local CONFIG = {
+    ORBIT_SPEED = 7,           -- Tốc độ xoay (7 như mày yêu cầu)
+    ORBIT_RADIUS = 8,          -- Khoảng cách xoay quanh target
+    UPPER_VEL_THRESHOLD = 55,  -- Ngưỡng velocity Y (đã tối ưu, chỉ detect uppercut địch)
+    SMOOTHNESS = 0.35,         -- Độ mượt (0.3 = nhanh, 0.4 = mượt hơn)
+    COOLDOWN_TIME = 5,         -- Delay giữa các lần dùng (5 giây)
+    DASH_DURATION = 1.65,      -- Thời gian dash tối đa (tự ngắt chính xác)
+    MAX_DISTANCE = 150,        -- Khoảng cách tối đa để detect target
+}
 
 local enabled = false
 local active = false
@@ -18,7 +27,7 @@ local angle = 0
 local cooldownEndTime = 0
 local dashEndTime = 0
 
--- ==================== GUI 50x50 DRAGGABLE ====================
+-- ==================== GUI 50x50 DRAGGABLE + STATUS REALTIME ====================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
@@ -67,26 +76,29 @@ ToggleButton.MouseButton1Click:Connect(function()
     ToggleButton.BackgroundColor3 = enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
 end)
 
--- ==================== HÀM CHECK UPPERCUT ====================
+-- ==================== HÀM CHECK UPPERCUT (CHỈ ĐỐI PHƯƠNG) ====================
 local function isUppercutVictim(char)
     if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") then return false end
     local hum = char.Humanoid
     local root = char.HumanoidRootPart
     if hum.Health <= 0 then return false end
+    
     local velY = root.AssemblyLinearVelocity.Y
     local isAir = hum:GetState() == Enum.HumanoidStateType.Freefall or hum.FloorMaterial == Enum.Material.Air
-    return velY > UPPER_VEL_THRESHOLD and isAir
+    
+    return velY > CONFIG.UPPER_VEL_THRESHOLD and isAir
 end
 
 local function findClosestUppercutVictim()
     local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
     if not myRoot then return nil end
+    
     local closest, shortest = nil, math.huge
     for _, p in ipairs(Players:GetPlayers()) do
         if p ~= player and p.Character then
             if isUppercutVictim(p.Character) then
                 local dist = (p.Character.HumanoidRootPart.Position - myRoot.Position).Magnitude
-                if dist < shortest and dist < 150 then
+                if dist < shortest and dist < CONFIG.MAX_DISTANCE then
                     shortest = dist
                     closest = p.Character
                 end
@@ -96,10 +108,9 @@ local function findClosestUppercutVictim()
     return closest
 end
 
--- ==================== DASH TRIGGER ====================
+-- ==================== DASH (Q) TRIGGER ====================
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp or not enabled or input.KeyCode ~= Enum.KeyCode.Q then return end
-
     if tick() < cooldownEndTime then return end
 
     local victim = findClosestUppercutVictim()
@@ -107,12 +118,12 @@ UserInputService.InputBegan:Connect(function(input, gp)
         target = victim
         active = true
         angle = 0
-        dashEndTime = tick() + 1.8
-        cooldownEndTime = tick() + COOLDOWN_TIME
+        dashEndTime = tick() + CONFIG.DASH_DURATION
+        cooldownEndTime = tick() + CONFIG.COOLDOWN_TIME
     end
 end)
 
--- ==================== MAIN LOOP ====================
+-- ==================== MAIN LOOP + UPDATE STATUS GUI ====================
 RunService.RenderStepped:Connect(function(delta)
     if not enabled then return end
 
@@ -123,11 +134,25 @@ RunService.RenderStepped:Connect(function(delta)
     if not humanoid or not rootPart then return end
 
     local now = tick()
+
+    -- Tự ngắt khi dash xong hoặc target mất
     if active and (now > dashEndTime or not target or not target:FindFirstChild("HumanoidRootPart") or target.Humanoid.Health <= 0 or not isUppercutVictim(target)) then
         active = false
         target = nil
         humanoid.AutoRotate = true
-        return
+    end
+
+    -- Update status trên nút 50x50 (chi tiết realtime)
+    if active then
+        ToggleButton.Text = "ACTIVE"
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    elseif now < cooldownEndTime then
+        local cdLeft = math.ceil(cooldownEndTime - now)
+        ToggleButton.Text = "CD:" .. cdLeft
+        ToggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    else
+        ToggleButton.Text = enabled and "ON" or "OFF"
+        ToggleButton.BackgroundColor3 = enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
     end
 
     if active and target then
@@ -136,18 +161,26 @@ RunService.RenderStepped:Connect(function(delta)
 
         humanoid.AutoRotate = false
 
-        angle += ORBIT_SPEED * delta
+        angle += CONFIG.ORBIT_SPEED * delta
 
         local targetPos = targetRoot.Position + Vector3.new(0, 3, 0)
-        local offset = Vector3.new(math.cos(angle) * ORBIT_RADIUS, 0, math.sin(angle) * ORBIT_RADIUS)
+        local offset = Vector3.new(math.cos(angle) * CONFIG.ORBIT_RADIUS, 0, math.sin(angle) * CONFIG.ORBIT_RADIUS)
         local orbitPos = targetPos + offset
 
         local targetCFrame = CFrame.new(orbitPos, targetPos)
-        rootPart.CFrame = rootPart.CFrame:Lerp(targetCFrame, SMOOTHNESS)
+        rootPart.CFrame = rootPart.CFrame:Lerp(targetCFrame, CONFIG.SMOOTHNESS)
 
         local vel = rootPart.AssemblyLinearVelocity
         rootPart.AssemblyLinearVelocity = Vector3.new(0, vel.Y, 0)
     else
-        humanoid.AutoRotate = true
+        if humanoid then
+            humanoid.AutoRotate = true
+        end
     end
 end)
+
+print("✅ TSB Orbit Aim - Bản đầy đủ & chi tiết nhất đã load!")
+print("   • Chỉ hoạt động khi ĐỐI PHƯƠNG bị uppercut")
+print("   • Bấm Q khi địch bay lên → Orbit speed 7 + Aim thân trong lúc dash")
+print("   • Tự ngắt khi dash xong + cooldown 5s")
+print("   • Nút 50x50 kéo thả được, có hiển thị ACTIVE / CD:5 realtime")

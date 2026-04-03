@@ -1,15 +1,14 @@
 --// TSB Auto Dash + Orbit + Body Aim
---// Only targets enemies that are uppercut / launched
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 
-local player = Players.LocalPlayer
+local LocalPlayer = Players.LocalPlayer
 
 --// SETTINGS
-local ORBIT_SPEED = 7
+local ORBIT_SPEED = 20
 local ORBIT_RADIUS = 8
 local ORBIT_HEIGHT = 3
 local SMOOTHNESS = 0.35
@@ -18,25 +17,25 @@ local ORBIT_DURATION = 1.7
 local MAX_DISTANCE = 160
 
 --// STATE
-local enabled = false
-local active = false
-local target = nil
-local angle = 0
-local cooldownEndTime = 0
-local orbitEndTime = 0
+local Enabled = false
+local Active = false
+local Target = nil
+local Angle = 0
+local OrbitEndTime = 0
+local CooldownEndTime = 0
 
 --// GUI
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "OrbitAimGui"
 ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
 local ToggleButton = Instance.new("TextButton")
-ToggleButton.Size = UDim2.new(0, 50, 0, 50)
+ToggleButton.Size = UDim2.new(0, 55, 0, 55)
 ToggleButton.Position = UDim2.new(0, 20, 0, 100)
 ToggleButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
 ToggleButton.Text = "OFF"
-ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ToggleButton.TextColor3 = Color3.new(1,1,1)
 ToggleButton.TextScaled = true
 ToggleButton.Font = Enum.Font.GothamBold
 ToggleButton.BorderSizePixel = 0
@@ -46,38 +45,57 @@ local Corner = Instance.new("UICorner")
 Corner.CornerRadius = UDim.new(1, 0)
 Corner.Parent = ToggleButton
 
---// Drag GUI
-local dragging = false
-local dragStart = nil
-local startPos = nil
-local movedTooFar = false
+--// DASH COOLDOWN BAR
+local DashBarBG = Instance.new("Frame")
+DashBarBG.Size = UDim2.new(0, 60, 0, 4)
+DashBarBG.Position = UDim2.new(0.5, -30, 1, 6)
+DashBarBG.BackgroundTransparency = 1
+DashBarBG.BorderSizePixel = 0
+DashBarBG.Parent = ToggleButton
+
+local DashBar = Instance.new("Frame")
+DashBar.Size = UDim2.new(1, 0, 1, 0)
+DashBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+DashBar.BorderSizePixel = 0
+DashBar.Visible = false
+DashBar.Parent = DashBarBG
+
+local DashBarCorner = Instance.new("UICorner")
+DashBarCorner.CornerRadius = UDim.new(1, 0)
+DashBarCorner.Parent = DashBar
+
+--// DRAG GUI
+local Dragging = false
+local DragStart
+local StartPos
+local DragMoved = false
 
 ToggleButton.InputBegan:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1
 	or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = true
-		movedTooFar = false
-		dragStart = input.Position
-		startPos = ToggleButton.Position
+		Dragging = true
+		DragMoved = false
+		DragStart = input.Position
+		StartPos = ToggleButton.Position
 	end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-	if dragging and (
+	if Dragging and (
 		input.UserInputType == Enum.UserInputType.MouseMovement
 		or input.UserInputType == Enum.UserInputType.Touch
 	) then
-		local delta = input.Position - dragStart
+		local Delta = input.Position - DragStart
 
-		if math.abs(delta.X) > 5 or math.abs(delta.Y) > 5 then
-			movedTooFar = true
+		if math.abs(Delta.X) > 4 or math.abs(Delta.Y) > 4 then
+			DragMoved = true
 		end
 
 		ToggleButton.Position = UDim2.new(
-			startPos.X.Scale,
-			startPos.X.Offset + delta.X,
-			startPos.Y.Scale,
-			startPos.Y.Offset + delta.Y
+			StartPos.X.Scale,
+			StartPos.X.Offset + Delta.X,
+			StartPos.Y.Scale,
+			StartPos.Y.Offset + Delta.Y
 		)
 	end
 end)
@@ -85,148 +103,155 @@ end)
 ToggleButton.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1
 	or input.UserInputType == Enum.UserInputType.Touch then
-		dragging = false
+		Dragging = false
 	end
 end)
 
 ToggleButton.MouseButton1Click:Connect(function()
-	if movedTooFar then
+	if DragMoved then
 		return
 	end
 
-	enabled = not enabled
+	Enabled = not Enabled
 
-	if enabled then
+	if Enabled then
 		ToggleButton.Text = "ON"
 		ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 	else
 		ToggleButton.Text = "OFF"
 		ToggleButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
-		active = false
-		target = nil
+		Active = false
+		Target = nil
 	end
 end)
 
-player.CharacterAdded:Connect(function()
-	active = false
-	target = nil
+--// RESET
+LocalPlayer.CharacterAdded:Connect(function()
+	Active = false
+	Target = nil
 end)
 
---// Auto Dash
-local function autoDash()
+--// AUTO DASH
+local function AutoDash()
 	VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
 	task.wait(0.05)
 	VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 end
 
---// Find best uppercut target
-local function findUppercutVictim()
-	local character = player.Character
-	if not character then
+--// CHECK REAL UPPERCUT
+local function IsRealUppercut(enemyRoot, myRoot)
+	local Velocity = enemyRoot.AssemblyLinearVelocity
+
+	return
+		Velocity.Y > 35
+		and Velocity.Y < 120
+		and enemyRoot.Position.Y > myRoot.Position.Y + 3
+		and math.abs(Velocity.X) < 60
+		and math.abs(Velocity.Z) < 60
+end
+
+--// FIND TARGET
+local function FindUppercutVictim()
+	local Character = LocalPlayer.Character
+	if not Character then
 		return nil
 	end
 
-	local myRoot = character:FindFirstChild("HumanoidRootPart")
-	if not myRoot then
+	local MyRoot = Character:FindFirstChild("HumanoidRootPart")
+	if not MyRoot then
 		return nil
 	end
 
-	local bestTarget = nil
-	local bestScore = math.huge
+	local ClosestTarget = nil
+	local ClosestDistance = math.huge
 
-	for _, p in ipairs(Players:GetPlayers()) do
-		if p ~= player and p.Character then
-			local enemyChar = p.Character
-			local hum = enemyChar:FindFirstChild("Humanoid")
-			local root = enemyChar:FindFirstChild("HumanoidRootPart")
+	for _, Player in ipairs(Players:GetPlayers()) do
+		if Player ~= LocalPlayer and Player.Character then
+			local EnemyCharacter = Player.Character
+			local Humanoid = EnemyCharacter:FindFirstChild("Humanoid")
+			local Root = EnemyCharacter:FindFirstChild("HumanoidRootPart")
 
-			if hum and root and hum.Health > 0 then
-				local distance = (root.Position - myRoot.Position).Magnitude
-				local upwardVelocity = root.AssemblyLinearVelocity.Y
+			if Humanoid and Root and Humanoid.Health > 0 then
+				local Distance = (Root.Position - MyRoot.Position).Magnitude
 
-				local isAirborne =
-					hum:GetState() == Enum.HumanoidStateType.Freefall
-					or hum.FloorMaterial == Enum.Material.Air
+				local IsAirborne =
+					Humanoid:GetState() == Enum.HumanoidStateType.Freefall
+					or Humanoid.FloorMaterial == Enum.Material.Air
 
-				local isUppercuted =
-					isAirborne
-					and upwardVelocity > 15
-					and upwardVelocity < 80
-					and distance < MAX_DISTANCE
-
-				if isUppercuted then
-					local healthPercent = hum.Health / hum.MaxHealth
-
-					local direction = (root.Position - myRoot.Position).Unit
-					local lookVector = myRoot.CFrame.LookVector
-					local dot = math.clamp(direction:Dot(lookVector), -1, 1)
-					local angleScore = 1 - math.max(dot, 0)
-
-					local score =
-						(distance * 1)
-						+ (healthPercent * 35)
-						+ (angleScore * 20)
-
-					if score < bestScore then
-						bestScore = score
-						bestTarget = enemyChar
+				if Distance <= MAX_DISTANCE and IsAirborne and IsRealUppercut(Root, MyRoot) then
+					if Distance < ClosestDistance then
+						ClosestDistance = Distance
+						ClosestTarget = EnemyCharacter
 					end
 				end
 			end
 		end
 	end
 
-	return bestTarget
+	return ClosestTarget
 end
 
---// Start orbit
-local function beginOrbit(victim)
-	target = victim
-	active = true
-	angle = 0
-	orbitEndTime = tick() + ORBIT_DURATION
-	cooldownEndTime = tick() + COOLDOWN_TIME
+--// START ORBIT
+local function BeginOrbit(Victim)
+	Target = Victim
+	Active = true
+	Angle = 0
+	OrbitEndTime = tick() + ORBIT_DURATION
+	CooldownEndTime = tick() + COOLDOWN_TIME
 
-	autoDash()
+	DashBar.Visible = true
+	DashBar.Size = UDim2.new(1, 0, 1, 0)
 
-	print("Orbiting:", victim.Name)
+	AutoDash()
 end
 
---// Detect target
+--// TARGET DETECTION
 RunService.Heartbeat:Connect(function()
-	if not enabled then return end
-	if active then return end
-	if tick() < cooldownEndTime then return end
+	if not Enabled then return end
+	if Active then return end
+	if tick() < CooldownEndTime then return end
 
-	local victim = findUppercutVictim()
+	local Victim = FindUppercutVictim()
 
-	if victim then
-		beginOrbit(victim)
+	if Victim then
+		BeginOrbit(Victim)
 	end
 end)
 
---// Orbit loop
+--// MAIN LOOP
 RunService.RenderStepped:Connect(function(delta)
-	local character = player.Character
-	if not character then return end
+	local Character = LocalPlayer.Character
+	if not Character then return end
 
-	local humanoid = character:FindFirstChild("Humanoid")
-	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	local Humanoid = Character:FindFirstChild("Humanoid")
+	local RootPart = Character:FindFirstChild("HumanoidRootPart")
 
-	if not humanoid or not rootPart then
+	if not Humanoid or not RootPart then
 		return
 	end
 
-	local now = tick()
+	local Now = tick()
 
-	if active then
+	--// Dash cooldown bar
+	if CooldownEndTime > Now then
+		local Remaining = CooldownEndTime - Now
+		local Percent = math.clamp(Remaining / COOLDOWN_TIME, 0, 1)
+
+		DashBar.Visible = true
+		DashBar.Size = UDim2.new(Percent, 0, 1, 0)
+	else
+		DashBar.Visible = false
+	end
+
+	--// Button status
+	if Active then
 		ToggleButton.Text = "ACTIVE"
 		ToggleButton.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-	elseif now < cooldownEndTime then
-		ToggleButton.Text = "CD:" .. math.ceil(cooldownEndTime - now)
+	elseif Now < CooldownEndTime then
+		ToggleButton.Text = tostring(math.ceil(CooldownEndTime - Now))
 		ToggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 	else
-		if enabled then
+		if Enabled then
 			ToggleButton.Text = "ON"
 			ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 		else
@@ -235,57 +260,55 @@ RunService.RenderStepped:Connect(function(delta)
 		end
 	end
 
-	if not active then
-		humanoid.AutoRotate = true
+	if not Active then
+		Humanoid.AutoRotate = true
 		return
 	end
 
-	if not target then
-		active = false
-		humanoid.AutoRotate = true
+	if not Target then
+		Active = false
+		Humanoid.AutoRotate = true
 		return
 	end
 
-	local targetHumanoid = target:FindFirstChild("Humanoid")
-	local targetRoot = target:FindFirstChild("HumanoidRootPart")
+	local TargetHumanoid = Target:FindFirstChild("Humanoid")
+	local TargetRoot = Target:FindFirstChild("HumanoidRootPart")
 
-	if not targetHumanoid or not targetRoot then
-		active = false
-		target = nil
-		humanoid.AutoRotate = true
+	if not TargetHumanoid or not TargetRoot then
+		Active = false
+		Target = nil
+		Humanoid.AutoRotate = true
 		return
 	end
 
-	if targetHumanoid.Health <= 0 or now > orbitEndTime then
-		active = false
-		target = nil
-		humanoid.AutoRotate = true
+	if TargetHumanoid.Health <= 0 or Now > OrbitEndTime then
+		Active = false
+		Target = nil
+		Humanoid.AutoRotate = true
 		return
 	end
 
-	humanoid.AutoRotate = false
-	angle = angle + (ORBIT_SPEED * delta)
+	Humanoid.AutoRotate = false
+	Angle = Angle + (ORBIT_SPEED * delta)
 
-	local targetPos = targetRoot.Position + Vector3.new(0, ORBIT_HEIGHT, 0)
+	local TargetPosition = TargetRoot.Position + Vector3.new(0, ORBIT_HEIGHT, 0)
 
-	local orbitOffset = Vector3.new(
-		math.cos(angle) * ORBIT_RADIUS,
+	local OrbitOffset = Vector3.new(
+		math.cos(Angle) * ORBIT_RADIUS,
 		0,
-		math.sin(angle) * ORBIT_RADIUS
+		math.sin(Angle) * ORBIT_RADIUS
 	)
 
-	local orbitPos = targetPos + orbitOffset
-	local currentPos = rootPart.Position:Lerp(orbitPos, SMOOTHNESS)
+	local OrbitPosition = TargetPosition + OrbitOffset
+	local SmoothedPosition = RootPart.Position:Lerp(OrbitPosition, SMOOTHNESS)
 
-	local lookCFrame = CFrame.new(currentPos, targetPos)
-	character:PivotTo(lookCFrame)
+	local LookCFrame = CFrame.new(SmoothedPosition, TargetPosition)
+	Character:PivotTo(LookCFrame)
 
-	local velocity = rootPart.AssemblyLinearVelocity
-	rootPart.AssemblyLinearVelocity = Vector3.new(
-		velocity.X * 0.2,
-		velocity.Y,
-		velocity.Z * 0.2
+	local Velocity = RootPart.AssemblyLinearVelocity
+	RootPart.AssemblyLinearVelocity = Vector3.new(
+		Velocity.X * 0.2,
+		Velocity.Y,
+		Velocity.Z * 0.2
 	)
 end)
-
-print("Loaded Auto Dash + Orbit + Body Aim")

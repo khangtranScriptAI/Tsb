@@ -14,7 +14,7 @@ local ORBIT_HEIGHT = 3
 local SMOOTHNESS = 0.35
 local COOLDOWN_TIME = 5
 local ORBIT_DURATION = 1.7
-local MAX_DISTANCE = LowestDistance
+local MAX_DISTANCE = 30
 
 --// STATE
 local Enabled = false

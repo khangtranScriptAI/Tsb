@@ -144,7 +144,7 @@ local function IsRealUppercut(enemyRoot, myRoot)
 
 	return
 		Velocity.Y > 45
-		and Velocity.Y < 120
+		and Velocity.Y < 56
 		and enemyRoot.Position.Y > myRoot.Position.Y + 3
 		and math.abs(Velocity.X) < 60
 		and math.abs(Velocity.Z) < 60

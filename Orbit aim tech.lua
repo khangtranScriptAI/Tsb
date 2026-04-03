@@ -165,9 +165,15 @@ local function FindUppercutVictim()
 				local IsAirborne = Humanoid:GetState() == Enum.HumanoidStateType.Freefall
 					or Humanoid.FloorMaterial == Enum.Material.Air
 
-				if IsAirborne and IsRealUppercut(Root, MyRoot) and Distance < ClosestDistance then
-					ClosestDistance = Distance
-					ClosestTarget = EnemyCharacter
+				if Distance <= MAX_DISTANCE
+	and Distance >= 4
+	and IsAirborne
+	and IsRealUppercut(Root, MyRoot)
+	and Root.Position.Y > MyRoot.Position.Y + 2
+	and Distance < ClosestDistance then
+
+	ClosestDistance = Distance
+	ClosestTarget = EnemyCharacter
 				end
 			end
 		end

@@ -8,13 +8,13 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 --// SETTINGS
-local ORBIT_SPEED = 75
+local ORBIT_SPEED = 50
 local ORBIT_RADIUS = 2
 local ORBIT_HEIGHT = 3
 local SMOOTHNESS = 0.35
 local COOLDOWN_TIME = 5
 local ORBIT_DURATION = 1.7
-local MAX_DISTANCE = 15
+local MAX_DISTANCE = LowestDistance
 
 --// STATE
 local Enabled = false
@@ -143,7 +143,7 @@ local function IsRealUppercut(enemyRoot, myRoot)
 	local Velocity = enemyRoot.AssemblyLinearVelocity
 
 	return
-		Velocity.Y > 40
+		Velocity.Y > 35
 		and Velocity.Y < 120
 		and enemyRoot.Position.Y > myRoot.Position.Y + 3
 		and math.abs(Velocity.X) < 60
@@ -163,32 +163,34 @@ local function FindUppercutVictim()
 	end
 
 	local ClosestTarget = nil
-	local ClosestDistance = math.huge
+local ClosestTarget = nil
+local ClosestDistance = math.huge
 
-	for _, Player in ipairs(Players:GetPlayers()) do
-		if Player ~= LocalPlayer and Player.Character then
-			local EnemyCharacter = Player.Character
-			local Humanoid = EnemyCharacter:FindFirstChild("Humanoid")
-			local Root = EnemyCharacter:FindFirstChild("HumanoidRootPart")
+for _, Player in ipairs(Players:GetPlayers()) do
+	if Player ~= LocalPlayer and Player.Character then
+		local EnemyCharacter = Player.Character
+		local Humanoid = EnemyCharacter:FindFirstChild("Humanoid")
+		local Root = EnemyCharacter:FindFirstChild("HumanoidRootPart")
 
-			if Humanoid and Root and Humanoid.Health > 0 then
-				local Distance = (Root.Position - MyRoot.Position).Magnitude
+		if Humanoid and Root and Humanoid.Health > 0 then
+			local Distance = (Root.Position - MyRoot.Position).Magnitude
 
-				local IsAirborne =
-					Humanoid:GetState() == Enum.HumanoidStateType.Freefall
-					or Humanoid.FloorMaterial == Enum.Material.Air
+			local IsAirborne =
+				Humanoid:GetState() == Enum.HumanoidStateType.Freefall
+				or Humanoid.FloorMaterial == Enum.Material.Air
 
-				if Distance <= MAX_DISTANCE and IsAirborne and IsRealUppercut(Root, MyRoot) then
-					if Distance < ClosestDistance then
-						ClosestDistance = Distance
-						ClosestTarget = EnemyCharacter
-					end
+			if Distance <= MAX_DISTANCE and IsAirborne and IsRealUppercut(Root, MyRoot) then
+				if Distance < ClosestDistance then
+					ClosestDistance = Distance
+					ClosestTarget = EnemyCharacter
 				end
 			end
 		end
 	end
+end
 
-	return ClosestTarget
+return ClosestTarget
+
 end
 
 --// START ORBIT

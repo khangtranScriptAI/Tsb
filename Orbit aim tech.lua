@@ -9,7 +9,7 @@ local LocalPlayer = Players.LocalPlayer
 
 --// SETTINGS
 local ORBIT_SPEED = 50
-local ORBIT_RADIUS = 3
+local ORBIT_RADIUS = 2
 local ORBIT_HEIGHT = 1
 local SMOOTHNESS = 0.35
 local COOLDOWN_TIME = 5
@@ -86,11 +86,9 @@ UserInputService.InputChanged:Connect(function(input)
 		or input.UserInputType == Enum.UserInputType.Touch
 	) then
 		local Delta = input.Position - DragStart
-
 		if math.abs(Delta.X) > 4 or math.abs(Delta.Y) > 4 then
 			DragMoved = true
 		end
-
 		ToggleButton.Position = UDim2.new(
 			StartPos.X.Scale,
 			StartPos.X.Offset + Delta.X,
@@ -108,12 +106,8 @@ ToggleButton.InputEnded:Connect(function(input)
 end)
 
 ToggleButton.MouseButton1Click:Connect(function()
-	if DragMoved then
-		return
-	end
-
+	if DragMoved then return end
 	Enabled = not Enabled
-
 	if Enabled then
 		ToggleButton.Text = "ON"
 		ToggleButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
@@ -138,59 +132,46 @@ local function AutoDash()
 	VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 end
 
---// CHECK REAL UPPERCUT
+--// CHECK REAL UPPERCUT (SÁT NHẤT)
 local function IsRealUppercut(enemyRoot, myRoot)
-	local Velocity = enemyRoot.AssemblyLinearVelocity
+	local Vel = enemyRoot.AssemblyLinearVelocity
+	local DeltaY = enemyRoot.Position.Y - myRoot.Position.Y
 
-	return
-		Velocity.Y > 45
-		and Velocity.Y < 56
-		and enemyRoot.Position.Y > myRoot.Position.Y + 3
-		and math.abs(Velocity.X) < 60
-		and math.abs(Velocity.Z) < 60
+	return Vel.Y > 48 and Vel.Y < 55   -- uppercut thật sự
+	   and DeltaY > 2                  -- cao hơn mình > 2 stud
+	   and math.abs(Vel.X) < 10        -- tránh nhảy nghiêng
+	   and math.abs(Vel.Z) < 10
 end
 
 --// FIND TARGET
 local function FindUppercutVictim()
 	local Character = LocalPlayer.Character
-	if not Character then
-		return nil
-	end
-
+	if not Character then return nil end
 	local MyRoot = Character:FindFirstChild("HumanoidRootPart")
-	if not MyRoot then
-		return nil
-	end
+	if not MyRoot then return nil end
 
 	local ClosestTarget = nil
-local ClosestTarget = nil
-local ClosestDistance = math.huge
+	local ClosestDistance = math.huge
 
-for _, Player in ipairs(Players:GetPlayers()) do
-	if Player ~= LocalPlayer and Player.Character then
-		local EnemyCharacter = Player.Character
-		local Humanoid = EnemyCharacter:FindFirstChild("Humanoid")
-		local Root = EnemyCharacter:FindFirstChild("HumanoidRootPart")
+	for _, Player in ipairs(Players:GetPlayers()) do
+		if Player ~= LocalPlayer and Player.Character then
+			local EnemyCharacter = Player.Character
+			local Humanoid = EnemyCharacter:FindFirstChild("Humanoid")
+			local Root = EnemyCharacter:FindFirstChild("HumanoidRootPart")
 
-		if Humanoid and Root and Humanoid.Health > 0 then
-			local Distance = (Root.Position - MyRoot.Position).Magnitude
+			if Humanoid and Root and Humanoid.Health > 0 then
+				local Distance = (Root.Position - MyRoot.Position).Magnitude
+				local IsAirborne = Humanoid:GetState() == Enum.HumanoidStateType.Freefall
+					or Humanoid.FloorMaterial == Enum.Material.Air
 
-			local IsAirborne =
-				Humanoid:GetState() == Enum.HumanoidStateType.Freefall
-				or Humanoid.FloorMaterial == Enum.Material.Air
-
-			if Distance <= MAX_DISTANCE and IsAirborne and IsRealUppercut(Root, MyRoot) then
-				if Distance < ClosestDistance then
+				if IsAirborne and IsRealUppercut(Root, MyRoot) and Distance < ClosestDistance then
 					ClosestDistance = Distance
 					ClosestTarget = EnemyCharacter
 				end
 			end
 		end
 	end
-end
-
-return ClosestTarget
-
+	return ClosestTarget
 end
 
 --// START ORBIT
@@ -203,7 +184,6 @@ local function BeginOrbit(Victim)
 
 	DashBar.Visible = true
 	DashBar.Size = UDim2.new(1, 0, 1, 0)
-
 	AutoDash()
 end
 
@@ -214,23 +194,16 @@ RunService.Heartbeat:Connect(function()
 	if tick() < CooldownEndTime then return end
 
 	local Victim = FindUppercutVictim()
-
-	if Victim then
-		BeginOrbit(Victim)
-	end
+	if Victim then BeginOrbit(Victim) end
 end)
 
 --// MAIN LOOP
 RunService.RenderStepped:Connect(function(delta)
 	local Character = LocalPlayer.Character
 	if not Character then return end
-
 	local Humanoid = Character:FindFirstChild("Humanoid")
 	local RootPart = Character:FindFirstChild("HumanoidRootPart")
-
-	if not Humanoid or not RootPart then
-		return
-	end
+	if not Humanoid or not RootPart then return end
 
 	local Now = tick()
 
@@ -238,7 +211,6 @@ RunService.RenderStepped:Connect(function(delta)
 	if CooldownEndTime > Now then
 		local Remaining = CooldownEndTime - Now
 		local Percent = math.clamp(Remaining / COOLDOWN_TIME, 0, 1)
-
 		DashBar.Visible = true
 		DashBar.Size = UDim2.new(Percent, 0, 1, 0)
 	else
@@ -275,7 +247,6 @@ RunService.RenderStepped:Connect(function(delta)
 
 	local TargetHumanoid = Target:FindFirstChild("Humanoid")
 	local TargetRoot = Target:FindFirstChild("HumanoidRootPart")
-
 	if not TargetHumanoid or not TargetRoot then
 		Active = false
 		Target = nil
@@ -294,16 +265,13 @@ RunService.RenderStepped:Connect(function(delta)
 	Angle = Angle + (ORBIT_SPEED * delta)
 
 	local TargetPosition = TargetRoot.Position + Vector3.new(0, ORBIT_HEIGHT, 0)
-
 	local OrbitOffset = Vector3.new(
 		math.cos(Angle) * ORBIT_RADIUS,
 		0,
 		math.sin(Angle) * ORBIT_RADIUS
 	)
-
 	local OrbitPosition = TargetPosition + OrbitOffset
 	local SmoothedPosition = RootPart.Position:Lerp(OrbitPosition, SMOOTHNESS)
-
 	local LookCFrame = CFrame.new(SmoothedPosition, TargetPosition)
 	Character:PivotTo(LookCFrame)
 

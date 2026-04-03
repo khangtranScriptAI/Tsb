@@ -137,10 +137,11 @@ local function IsRealUppercut(enemyRoot, myRoot)
 	local Vel = enemyRoot.AssemblyLinearVelocity
 	local DeltaY = enemyRoot.Position.Y - myRoot.Position.Y
 
-	return Vel.Y > 48 and Vel.Y < 55   -- uppercut thật sự
-	   and DeltaY > 2                  -- cao hơn mình > 2 stud
-	   and math.abs(Vel.X) < 10        -- tránh nhảy nghiêng
-	   and math.abs(Vel.Z) < 10
+	return Vel.Y > 48 and Vel.Y < 58
+		and DeltaY > 2
+		and DeltaY < 12
+		and math.abs(Vel.X) < 6
+		and math.abs(Vel.Z) < 6
 end
 
 --// FIND TARGET

@@ -54,13 +54,14 @@ lockStroke.Parent = lockButton
 local function doTech()
     local originalCFrame = camera.CFrame
 
-    camera.CFrame = camera.CFrame * CFrame.Angles(0, math.rad(180), 0)
+    local _, yRotation, _ = originalCFrame:ToOrientation()
+    camera.CFrame = CFrame.new(originalCFrame.Position) * CFrame.Angles(0, yRotation + math.rad(180), 0)
 
     VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
     task.wait()
     VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 
-    task.wait(0.25)
+    task.wait(0.3)
 
     camera.CFrame = originalCFrame
 end

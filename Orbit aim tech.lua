@@ -8,13 +8,13 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local LocalPlayer = Players.LocalPlayer
 
 --// SETTINGS
-local ORBIT_SPEED = 20
-local ORBIT_RADIUS = 8
+local ORBIT_SPEED = 75
+local ORBIT_RADIUS = 2
 local ORBIT_HEIGHT = 3
 local SMOOTHNESS = 0.35
 local COOLDOWN_TIME = 5
 local ORBIT_DURATION = 1.7
-local MAX_DISTANCE = 160
+local MAX_DISTANCE = 15
 
 --// STATE
 local Enabled = false
@@ -143,7 +143,7 @@ local function IsRealUppercut(enemyRoot, myRoot)
 	local Velocity = enemyRoot.AssemblyLinearVelocity
 
 	return
-		Velocity.Y > 35
+		Velocity.Y > 80
 		and Velocity.Y < 120
 		and enemyRoot.Position.Y > myRoot.Position.Y + 3
 		and math.abs(Velocity.X) < 60

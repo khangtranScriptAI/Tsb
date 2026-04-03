@@ -1,4 +1,3 @@
---// TARGET PRIORITY: only uppercut victims
 local function findUppercutVictim()
 	local character = player.Character
 	if not character then return nil end
@@ -22,7 +21,6 @@ local function findUppercutVictim()
 					hum:GetState() == Enum.HumanoidStateType.Freefall
 					or hum.FloorMaterial == Enum.Material.Air
 
-				-- chỉ detect người bị uppercut / hất tung
 				local isUppercuted =
 					isAirborne
 					and upwardVelocity > 15
@@ -49,17 +47,13 @@ local function findUppercutVictim()
 
 		if root and hum then
 			local distance = (root.Position - myRoot.Position).Magnitude
-
-			-- máu thấp hơn = ưu tiên hơn
 			local healthPercent = hum.Health / hum.MaxHealth
 
-			-- gần hướng nhìn hơn = ưu tiên hơn
 			local direction = (root.Position - myRoot.Position).Unit
 			local lookVector = myRoot.CFrame.LookVector
 			local dot = math.clamp(direction:Dot(lookVector), -1, 1)
 			local angleScore = 1 - math.max(dot, 0)
 
-			-- score thấp hơn = ưu tiên hơn
 			local score =
 				(distance * 1)
 				+ (healthPercent * 35)

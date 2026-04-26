@@ -1,14 +1,9 @@
 local player = game.Players.LocalPlayer
-local lighting = game:GetService("Lighting")
 
 -- ===== LOW TEXTURE =====
 pcall(function()
 	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end)
-
-local blur = Instance.new("BlurEffect")
-blur.Size = 6
-blur.Parent = lighting
 
 for _, v in pairs(workspace:GetDescendants()) do
 	if v:IsA("Part") or v:IsA("MeshPart") then
@@ -32,7 +27,7 @@ workspace.DescendantAdded:Connect(function(v)
 	end
 end)
 
--- ===== ẨN BODY (ANTI RESET) =====
+-- ===== ẨN ĐẦU + CHÂN PHẢI (ANTI RESET) =====
 local function hideParts(char)
 	while char and char.Parent do
 		local head = char:FindFirstChild("Head")
@@ -45,7 +40,6 @@ local function hideParts(char)
 			end
 		end
 
-		-- chân phải (R15 + R6)
 		local rightLeg = char:FindFirstChild("RightLowerLeg") 
 			or char:FindFirstChild("RightUpperLeg")
 			or char:FindFirstChild("Right Leg")
@@ -54,7 +48,7 @@ local function hideParts(char)
 			rightLeg.Transparency = 1
 		end
 
-		task.wait(0.5) -- loop chống game hồi lại
+		task.wait(0.5)
 	end
 end
 
@@ -66,10 +60,8 @@ local function onCharacter(char)
 	end)
 end
 
--- lần đầu
 if player.Character then
 	onCharacter(player.Character)
 end
 
--- mỗi lần respawn
 player.CharacterAdded:Connect(onCharacter)

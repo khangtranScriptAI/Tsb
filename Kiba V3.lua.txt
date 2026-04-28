@@ -511,9 +511,13 @@ local function v_u_99()
     if v_u_15 and not v_u_16 then
         if v_u_14 <= tick() - v_u_13 then
             v_u_13 = tick()
-            task.spawn(function()
-                pcall(v_u_55)
+            
+            task.delay(1.7, function()
+                if v_u_15 and not v_u_16 then
+                    pcall(v_u_55)
+                end
             end)
+            
             task.spawn(function()
                 v_u_80(v_u_17)
             end)

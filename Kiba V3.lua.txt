@@ -49,7 +49,19 @@ local function deleteBodyMovers()
     end
 end
 
+-- ==================== RESTORE ====================
+local function restoreState(oldSpeed, oldJump)
+    if Humanoid then
+        Humanoid.PlatformStand = false
+        Humanoid.AutoRotate = true
+        Humanoid.WalkSpeed = oldSpeed
+        Humanoid.JumpPower = oldJump
+        Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+    end
+end
+
 -- ==================== DASH ====================
+task.delay(1.7)
 local function StickDash()
     if debounce then return end
     debounce = true
@@ -65,23 +77,25 @@ local function StickDash()
         return
     end
 
-    -- Lưu trạng thái
+    -- ===== SAVE STATE =====
     local oldSpeed = Humanoid.WalkSpeed
     local oldJump = Humanoid.JumpPower
 
-    -- Freeze
+    -- ===== LOCK =====
     Humanoid.WalkSpeed = 0
     Humanoid.JumpPower = 0
-    Humanoid.AutoRotate = false
     Humanoid.PlatformStand = true
+    Humanoid.AutoRotate = false
 
     deleteBodyMovers()
 
-    -- Nghiêng người
+    -- ===== TIME =====
+    local start = tick()
+
+    -- ===== NGHIÊNG =====
     RootPart.CFrame = RootPart.CFrame * CFrame.Angles(math.rad(85), 0, 0)
 
-    -- Lock vào target
-    local start = tick()
+    -- ===== BÁM TARGET =====
     local con
     con = RunService.Heartbeat:Connect(function()
         if not target or not target.Parent then
@@ -89,8 +103,10 @@ local function StickDash()
             return
         end
 
-        if tick() - start < 0.7 then
-            local pos = target.Position - target.CFrame.LookVector * 0.5
+        local elapsed = tick() - start
+
+        if elapsed < 0.7 then
+            local pos = target.Position - target.CFrame.LookVector * 0.3
 
             RootPart.Velocity = Vector3.zero
             RootPart.RotVelocity = Vector3.zero
@@ -103,41 +119,44 @@ local function StickDash()
         end
     end)
 
-    -- Dash packet
-    task.delay(0.18, function()
+    -- ===== DASH PACKET (TỪ CODE 1) =====
+    task.delay(1.8, function()
         local comm = Character:FindFirstChild("Communicate")
         if comm then
-            comm:FireServer({
-                {
-                    Dash = Enum.KeyCode.W,
-                    Key = Enum.KeyCode.Q,
-                    Goal = "KeyPress"
-                }
-            })
+            pcall(function()
+                comm:FireServer({
+                    {
+                        Dash = Enum.KeyCode.W,
+                        Key = Enum.KeyCode.Q,
+                        Goal = "KeyPress"
+                    }
+                })
+            end)
         end
     end)
 
-    -- Reset
-    task.delay(1, function()
+    -- ===== ĐỨNG DẬY SỚM =====
+    task.delay(0.3, function()
         if Humanoid then
-            Humanoid.PlatformStand = false
-            Humanoid.AutoRotate = true
-            Humanoid.WalkSpeed = oldSpeed
-            Humanoid.JumpPower = oldJump
             Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
+    end)
+
+    -- ===== RESTORE =====
+    task.delay(0.75, function()
+        restoreState(oldSpeed, oldJump)
         debounce = false
     end)
 end
 
 -- ==================== UI ====================
 local screen = Instance.new("ScreenGui")
-screen.Name = "LethalDashV2"
+screen.Name = "LethalDashMerged"
 screen.ResetOnSpawn = false
 screen.Parent = lp:WaitForChild("PlayerGui")
 
 local button = Instance.new("TextButton")
-button.Size = UDim2.new(0, 70, 0, 50)
+button.Size = UDim2.new(0, 50, 0, 50)
 button.Position = UDim2.new(0, 20, 0, 100)
 button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 button.Text = "ON"
@@ -190,4 +209,4 @@ end
 
 lp.CharacterAdded:Connect(setupCharacter)
 
-print("Lethal Dash V2 FIXED + SMOOTH 🔥")
+print("Lethal Dash MERGED READY 🔥")

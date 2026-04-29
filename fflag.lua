@@ -5,35 +5,41 @@ pcall(function()
 	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 end)
 
-for _, v in pairs(workspace:GetDescendants()) do
+local function lowTex(v)
 	if v:IsA("Part") or v:IsA("MeshPart") then
 		v.Material = Enum.Material.SmoothPlastic
 		v.Reflectance = 0
-	end
-
-	if v:IsA("Decal") or v:IsA("Texture") then
+	elseif v:IsA("Decal") or v:IsA("Texture") then
 		v.Transparency = 0.4
 	end
 end
 
-workspace.DescendantAdded:Connect(function(v)
-	if v:IsA("Part") or v:IsA("MeshPart") then
-		v.Material = Enum.Material.SmoothPlastic
-		v.Reflectance = 0
-	end
+for _, v in pairs(workspace:GetDescendants()) do
+	lowTex(v)
+end
 
-	if v:IsA("Decal") or v:IsA("Texture") then
-		v.Transparency = 0.4
-	end
-end)
+workspace.DescendantAdded:Connect(lowTex)
 
--- ===== ẨN ĐẦU + CHÂN PHẢI (ANTI RESET) =====
+-- ===== XÓA BỤI / EFFECT =====
+local function removeEffects(v)
+	if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+		v:Destroy()
+	end
+end
+
+for _, v in pairs(workspace:GetDescendants()) do
+	removeEffects(v)
+end
+
+workspace.DescendantAdded:Connect(removeEffects)
+
+-- ===== ẨN ĐẦU + CHÂN PHẢI =====
 local function hideParts(char)
-	while char and char.Parent do
+	while char.Parent do
 		local head = char:FindFirstChild("Head")
 		if head then
-			head.Transparency = 1
-
+			head.LocalTransparencyModifier = 1
+			
 			local face = head:FindFirstChildWhichIsA("Decal")
 			if face then
 				face:Destroy()
@@ -45,16 +51,16 @@ local function hideParts(char)
 			or char:FindFirstChild("Right Leg")
 
 		if rightLeg then
-			rightLeg.Transparency = 1
+			rightLeg.LocalTransparencyModifier = 1
 		end
 
-		task.wait(0.5)
+		task.wait(0.1)
 	end
 end
 
 local function onCharacter(char)
 	char:WaitForChild("Humanoid")
-	task.wait(0.2)
+	task.wait(0.1)
 	task.spawn(function()
 		hideParts(char)
 	end)

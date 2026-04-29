@@ -61,7 +61,7 @@ local function restoreState(oldSpeed, oldJump)
 end
 
 -- ==================== DASH ====================
-task.delay(1.7)
+task.wait(1.7)
 local function StickDash()
     if debounce then return end
     debounce = true

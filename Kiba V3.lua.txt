@@ -1,578 +1,193 @@
--- ts file was generated at discord.gg/25ms
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
+local lp = Players.LocalPlayer
+local vu5 = true
+local AnimationId = "rbxassetid://12296113986"
 
-local v1 = game:GetService("Players")
-local v2 = game:GetService("TweenService")
-local v3 = game:GetService("UserInputService")
-local v_u_4 = game:GetService("RunService")
-local v_u_5 = v1.LocalPlayer
-local function v9(p_u_6)
-    p_u_6.ResetOnSpawn = false
-    if type(syn) == "table" and syn.protect_gui then
-        pcall(function()
-            syn.protect_gui(p_u_6)
-        end)
-        if gethui then
-            p_u_6.Parent = gethui()
+local Character, Humanoid, RootPart
+local debounce = false
+
+-- ==================== FIND TARGET ====================
+local function getNearestTarget()
+    if not RootPart then return nil end
+
+    local closest = nil
+    local shortest = math.huge
+
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v ~= Character then
+            local hum = v:FindFirstChildOfClass("Humanoid")
+            local hrp = v:FindFirstChild("HumanoidRootPart")
+
+            if hum and hrp and hum.Health > 0 then
+                local dist = (hrp.Position - RootPart.Position).Magnitude
+                if dist < shortest then
+                    shortest = dist
+                    closest = hrp
+                end
+            end
+        end
+    end
+
+    return closest
+end
+
+-- ==================== CLEAN BODY MOVERS ====================
+local function deleteBodyMovers()
+    if not Character then return end
+
+    for _, v in pairs(Character:GetDescendants()) do
+        if v:IsA("BodyMover") 
+        or v:IsA("LinearVelocity") 
+        or v:IsA("AngularVelocity") 
+        or v:IsA("VectorForce") 
+        or v:IsA("AlignPosition") 
+        or v:IsA("AlignOrientation") then
+            pcall(function() v:Destroy() end)
+        end
+    end
+end
+
+-- ==================== DASH ====================
+local function StickDash()
+    if debounce then return end
+    debounce = true
+
+    if not (Character and Humanoid and RootPart) then
+        debounce = false
+        return
+    end
+
+    local target = getNearestTarget()
+    if not target then
+        debounce = false
+        return
+    end
+
+    -- Lưu trạng thái
+    local oldSpeed = Humanoid.WalkSpeed
+    local oldJump = Humanoid.JumpPower
+
+    -- Freeze
+    Humanoid.WalkSpeed = 0
+    Humanoid.JumpPower = 0
+    Humanoid.AutoRotate = false
+    Humanoid.PlatformStand = true
+
+    deleteBodyMovers()
+
+    -- Nghiêng người
+    RootPart.CFrame = RootPart.CFrame * CFrame.Angles(math.rad(85), 0, 0)
+
+    -- Lock vào target
+    local start = tick()
+    local con
+    con = RunService.Heartbeat:Connect(function()
+        if not target or not target.Parent then
+            con:Disconnect()
             return
         end
-    end
-    if gethui then
-        p_u_6.Parent = gethui()
-    else
-        local v7, v8 = pcall(function()
-            return v_u_5:WaitForChild("PlayerGui")
-        end)
-        if v7 and v8 then
-            p_u_6.Parent = v8
+
+        if tick() - start < 0.7 then
+            local pos = target.Position - target.CFrame.LookVector * 0.5
+
+            RootPart.Velocity = Vector3.zero
+            RootPart.RotVelocity = Vector3.zero
+
+            RootPart.CFrame =
+                CFrame.new(pos, target.Position) *
+                CFrame.Angles(math.rad(85), 0, 0)
         else
-            p_u_6.Parent = game:GetService("CoreGui")
+            con:Disconnect()
         end
-    end
-end
-local v_u_10 = nil
-local v_u_11 = nil
-local v_u_12 = nil
-local v_u_13 = 0
-local v_u_14 = 0.35
-local v_u_15 = true
-local v_u_16 = false
-local v_u_17 = 7
-local v_u_18 = 0.3
-local function v_u_27()
-    local v19 = nil
-    local v20 = math.huge
-    if not v_u_12 then
-        return nil
-    end
-    local v21, v22, v23 = pairs(workspace:GetDescendants())
-    while true do
-        local v_u_24
-        v23, v_u_24 = v21(v22, v23)
-        if v23 == nil then
-            break
-        end
-        local v25
-        if v_u_24:IsA("Model") and (v_u_24:FindFirstChild("HumanoidRootPart") and v_u_24 ~= v_u_10) then
-            local v26
-            v26, v25 = pcall(function()
-                return (v_u_12.Position - v_u_24.HumanoidRootPart.Position).Magnitude
-            end)
-            if not v26 or (not v25 or v25 >= v20) then
-                v_u_24 = v19
-                v25 = v20
-            end
-        else
-            v_u_24 = v19
-            v25 = v20
-        end
-        v19 = v_u_24
-        v20 = v25
-    end
-    return v19
-end
-local function v_u_37()
-    task.delay(0.1, function()
-        pcall(function()
-            local v28 = {
+    end)
+
+    -- Dash packet
+    task.delay(0.18, function()
+        local comm = Character:FindFirstChild("Communicate")
+        if comm then
+            comm:FireServer({
                 {
                     Dash = Enum.KeyCode.W,
                     Key = Enum.KeyCode.Q,
                     Goal = "KeyPress"
                 }
-            }
-            if v_u_10 and v_u_10:FindFirstChild("Communicate") then
-                v_u_10.Communicate:FireServer(unpack(v28))
-            end
-        end)
-    end)
-    local function v_u_35(p29, p30)
-        if type(getnilinstances) ~= "function" then
-            return nil
-        end
-        local v31, v32, v33 = pairs(getnilinstances())
-        while true do
-            local v34
-            v33, v34 = v31(v32, v33)
-            if v33 == nil then
-                break
-            end
-            if v34.ClassName == p30 and v34.Name == p29 then
-                return v34
-            end
-        end
-    end
-    pcall(function()
-        local v36 = {
-            {
-                Goal = "delete bv",
-                BV = v_u_35("moveme", "BodyVelocity")
-            }
-        }
-        if v_u_10 and v_u_10:FindFirstChild("Communicate") then
-            v_u_10.Communicate:FireServer(unpack(v36))
+            })
         end
     end)
-end
-local function v_u_55()
-    if v_u_10 and (v_u_11 and v_u_12) then
-        local v38 = v_u_27()
-        if v38 then
-            local v_u_39 = v38:FindFirstChild("HumanoidRootPart")
-            if v_u_39 then
-                local v_u_40 = {}
-                pcall(function()
-                    v_u_40.WalkSpeed = v_u_11.WalkSpeed
-                    v_u_40.JumpPower = v_u_11.JumpPower
-                    v_u_40.PlatformStand = v_u_11.PlatformStand
-                    if v_u_11:GetAttribute("AutoRotate") ~= nil then
-                        v_u_40.AutoRotate = v_u_11.AutoRotate
-                    else
-                        pcall(function()
-                            v_u_40.AutoRotate = v_u_11.AutoRotate
-                        end)
-                    end
-                end)
-                local v_u_41 = nil
-                local function v48()
-                    if v_u_11 and (v_u_12 and v_u_10) then
-                        pcall(function()
-                            v_u_11.WalkSpeed = 0
-                            v_u_11.JumpPower = 0
-                            v_u_11.PlatformStand = true
-                            pcall(function()
-                                v_u_11.AutoRotate = false
-                            end)
-                            if v_u_12 then
-                                v_u_12.Velocity = Vector3.new(0, 0, 0)
-                                v_u_12.RotVelocity = Vector3.new(0, 0, 0)
-                            end
-                        end)
-                        local v42 = v_u_10
-                        local v43, v44, v45 = pairs(v42:GetDescendants())
-                        while true do
-                            local v_u_46
-                            v45, v_u_46 = v43(v44, v45)
-                            if v45 == nil then
-                                break
-                            end
-                            local v47 = v_u_46.ClassName
-                            if v47 == "BodyVelocity" or (v47 == "BodyPosition" or (v47 == "BodyGyro" or (v47 == "VectorForce" or (v47 == "AlignPosition" or (v47 == "AlignOrientation" or (v47 == "LinearVelocity" or v47 == "AngularVelocity")))))) then
-                                pcall(function()
-                                    v_u_46:Destroy()
-                                end)
-                            end
-                        end
-                        v_u_41 = v_u_4.Heartbeat:Connect(function()
-                            if v_u_12 then
-                                pcall(function()
-                                    v_u_12.Velocity = Vector3.new(0, 0, 0)
-                                    v_u_12.RotVelocity = Vector3.new(0, 0, 0)
-                                end)
-                            end
-                            if v_u_11 and v_u_11.WalkSpeed then
-                                pcall(function()
-                                    v_u_11.WalkSpeed = 0
-                                end)
-                            end
-                        end)
-                    end
-                end
-                local function v_u_49()
-                    if v_u_41 and v_u_41.Disconnect then
-                        pcall(function()
-                            v_u_41:Disconnect()
-                        end)
-                    end
-                    pcall(function()
-                        if v_u_11 then
-                            v_u_11.WalkSpeed = v_u_40.WalkSpeed or 16
-                            v_u_11.JumpPower = v_u_40.JumpPower or 50
-                            v_u_11.PlatformStand = v_u_40.PlatformStand or false
-                            if v_u_40.AutoRotate ~= nil then
-                                pcall(function()
-                                    v_u_11.AutoRotate = v_u_40.AutoRotate
-                                end)
-                            end
-                        end
-                        if v_u_12 then
-                            pcall(function()
-                                v_u_12.Velocity = Vector3.new(0, 0, 0)
-                                v_u_12.RotVelocity = Vector3.new(0, 0, 0)
-                            end)
-                        end
-                    end)
-                end
-                v48()
-                pcall(function()
-                    v_u_11:ChangeState(Enum.HumanoidStateType.Physics)
-                end)
-                v_u_12.CFrame = v_u_12.CFrame * CFrame.Angles(math.rad(85), 0, 0)
-                local v_u_50 = tick()
-                local v_u_51 = nil
-                v_u_51 = v_u_4.Heartbeat:Connect(function()
-                    if tick() - v_u_50 < 0.7 then
-                        local v52, v53 = pcall(function()
-                            return CFrame.new(v_u_39.Position - v_u_39.CFrame.LookVector * 0.3) * CFrame.Angles(math.rad(85), 0, 0)
-                        end)
-                        if v52 and v53 then
-                            v_u_12.CFrame = v53
-                        end
-                    else
-                        v_u_51:Disconnect()
-                    end
-                end)
-                task.delay(0.18, function()
-                    pcall(v_u_37)
-                end)
-                task.delay(0.3, function()
-                    pcall(function()
-                        v_u_11:ChangeState(Enum.HumanoidStateType.GettingUp)
-                    end)
-                end)
-                local v54 = 0.7 + v_u_18
-                task.delay(v54, function()
-                    pcall(v_u_49)
-                end)
-            end
-        else
-            return
+
+    -- Reset
+    task.delay(1, function()
+        if Humanoid then
+            Humanoid.PlatformStand = false
+            Humanoid.AutoRotate = true
+            Humanoid.WalkSpeed = oldSpeed
+            Humanoid.JumpPower = oldJump
+            Humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
         end
-    else
-        return
-    end
-end
-local v56 = Instance.new("ScreenGui")
-v56.Name = "Merebennie_StickDashGui"
-v56.IgnoreGuiInset = true
-v9(v56)
-local v_u_57 = Instance.new("TextButton")
-v_u_57.Name = "StickDashToggle"
-v_u_57.Size = UDim2.new(0, 45, 0, 45)
-v_u_57.Position = UDim2.new(0.4, 0, 0.8, 0)
-v_u_57.Text = "On"
-v_u_57.Font = Enum.Font.GothamBold
-v_u_57.TextSize = 18
-v_u_57.TextScaled = true
-v_u_57.BackgroundColor3 = Color3.fromRGB(66, 150, 255)
-v_u_57.TextColor3 = Color3.new(1, 1, 1)
-v_u_57.Parent = v56
-v_u_57.ZIndex = 9999
-v_u_57.Active = true
-Instance.new("UICorner", v_u_57).CornerRadius = UDim.new(0, 8)
-local v58 = Instance.new("UIStroke", v_u_57)
-v58.Thickness = 1
-v58.Transparency = 0.25
-pcall(function()
-    if Font and Font.new then
-        v_u_57.FontFace = Font.new("rbxasset://fonts/families/FredokaOne.json")
-    end
-end)
-local v_u_59 = Instance.new("Sound")
-v_u_59.Name = "ToggleSound"
-v_u_59.SoundId = "rbxassetid://5852470908"
-v_u_59.Parent = v_u_57
-v_u_59.Volume = 1
-local v60 = v_u_57.Size
-local v_u_61 = v2:Create(v_u_57, TweenInfo.new(0.06, Enum.EasingStyle.Sine, Enum.EasingDirection.Out), {
-    Size = UDim2.new(v60.X.Scale, math.floor(v60.X.Offset * 0.88), v60.Y.Scale, math.floor(v60.Y.Offset * 0.88))
-})
-local v_u_62 = v2:Create(v_u_57, TweenInfo.new(0.12, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
-    Size = v60
-})
-local v_u_63 = nil
-local v_u_64 = nil
-local v_u_65 = nil
-local v_u_66 = nil
-v_u_57.InputBegan:Connect(function(p_u_67)
-    if p_u_67.UserInputType == Enum.UserInputType.MouseButton1 or p_u_67.UserInputType == Enum.UserInputType.Touch then
-        pcall(function()
-            v_u_61:Play()
-            if v_u_59 and v_u_59.Play then
-                v_u_59:Play()
-            end
-        end)
-        v_u_63 = true
-        v_u_65 = p_u_67.Position
-        v_u_66 = v_u_57.Position
-        p_u_67.Changed:Connect(function()
-            if p_u_67.UserInputState == Enum.UserInputState.End then
-                v_u_63 = false
-                pcall(function()
-                    v_u_62:Play()
-                end)
-            end
-        end)
-    end
-end)
-v_u_57.InputChanged:Connect(function(p68)
-    if p68.UserInputType == Enum.UserInputType.MouseMovement or p68.UserInputType == Enum.UserInputType.Touch then
-        v_u_64 = p68
-    end
-end)
-v3.InputChanged:Connect(function(p69)
-    if p69 == v_u_64 and (v_u_63 and v_u_66) then
-        local v70 = p69.Position - v_u_65
-        v_u_57.Position = UDim2.new(v_u_66.X.Scale, v_u_66.X.Offset + v70.X, v_u_66.Y.Scale, v_u_66.Y.Offset + v70.Y)
-    end
-end)
-v_u_57.MouseButton1Click:Connect(function()
-    v_u_15 = not v_u_15
-    if v_u_15 then
-        v_u_57.Text = "On"
-        v_u_57.BackgroundColor3 = Color3.fromRGB(66, 150, 255)
-    else
-        v_u_57.Text = "Off"
-        v_u_57.BackgroundColor3 = Color3.fromRGB(130, 130, 130)
-    end
-    pcall(function()
-        v_u_62:Play()
+        debounce = false
     end)
-    pcall(function()
-        if v_u_59 and v_u_59.Play then
-            v_u_59:Play()
-        end
-    end)
-end)
-local v_u_71 = Instance.new("Frame")
-v_u_71.Name = "MerckCooldown"
-v_u_71.Size = UDim2.new(0, 140, 0, 32)
-v_u_71.Position = UDim2.new(0, 8, 1, - 48)
-v_u_71.AnchorPoint = Vector2.new(0, 0)
-v_u_71.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
-v_u_71.BackgroundTransparency = 0.25
-v_u_71.Visible = false
-v_u_71.Parent = v56
-v_u_71.ZIndex = 9998
-v_u_71.Active = true
-Instance.new("UICorner", v_u_71).CornerRadius = UDim.new(0, 14)
-local v72 = Instance.new("UIStroke", v_u_71)
-v72.Thickness = 1
-v72.Transparency = 0.35
-local v_u_73 = Instance.new("TextLabel")
-v_u_73.Name = "CooldownText"
-v_u_73.Size = UDim2.new(1, - 12, 1, 0)
-v_u_73.Position = UDim2.new(0, 8, 0, 0)
-v_u_73.BackgroundTransparency = 1
-v_u_73.Text = "Kiba V3 : 0.0s"
-v_u_73.TextColor3 = Color3.new(1, 1, 1)
-v_u_73.Font = Enum.Font.GothamBold
-v_u_73.TextSize = 14
-v_u_73.TextXAlignment = Enum.TextXAlignment.Left
-v_u_73.Parent = v_u_71
-v_u_73.ZIndex = 9999
-local v_u_74 = v2:Create(v_u_71, TweenInfo.new(0.6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, - 1, true), {
-    BackgroundTransparency = 0.18
-})
-local v_u_75 = false
-local function v_u_80(p76)
-    if not v_u_16 then
-        v_u_16 = true
-        v_u_71.Visible = true
-        if not v_u_75 then
-            v_u_75 = true
-            pcall(function()
-                v_u_74:Play()
-            end)
-        end
-        local v77 = tick()
-        local v78 = p76
-        while p76 > 0 do
-            local v79 = v78 - (tick() - v77)
-            p76 = v79 < 0 and 0 or v79
-            v_u_73.Text = string.format("Kiba V3 : %.1fs", p76)
-            task.wait(0.1)
-        end
-        v_u_16 = false
-        v_u_71.Visible = false
-        pcall(function()
-            v_u_74:Cancel()
-        end)
-        v_u_75 = false
-    end
 end
-local v_u_81 = Instance.new("Frame")
-v_u_81.Name = "MerebennieInfoBox"
-v_u_81.Size = UDim2.new(0, 200, 0, 92)
-v_u_81.Position = UDim2.new(0.05, 0, 0.12, 0)
-v_u_81.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
-v_u_81.Parent = v56
-v_u_81.ZIndex = 10000
-v_u_81.Active = true
-Instance.new("UICorner", v_u_81).CornerRadius = UDim.new(0, 10)
-Instance.new("UIStroke", v_u_81).Transparency = 0.35
-local v82 = Instance.new("TextLabel")
-v82.Name = "InfoTitle"
-v82.Size = UDim2.new(1, - 40, 0, 24)
-v82.Position = UDim2.new(0, 10, 0, 6)
-v82.BackgroundTransparency = 1
-v82.Text = "Made by Merebennie"
-v82.TextColor3 = Color3.fromRGB(30, 30, 30)
-v82.Font = Enum.Font.GothamBold
-v82.TextSize = 14
-v82.TextXAlignment = Enum.TextXAlignment.Left
-v82.Parent = v_u_81
-v82.ZIndex = 10001
-local v83 = Instance.new("TextButton")
-v83.Name = "InfoClose"
-v83.Size = UDim2.new(0, 22, 0, 22)
-v83.Position = UDim2.new(1, - 28, 0, 6)
-v83.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-v83.Text = "X"
-v83.Font = Enum.Font.GothamBold
-v83.TextSize = 14
-v83.TextColor3 = Color3.new(1, 1, 1)
-v83.Parent = v_u_81
-v83.ZIndex = 10002
-Instance.new("UICorner", v83).CornerRadius = UDim.new(0, 6)
-v83.MouseButton1Click:Connect(function()
-    v_u_81.Visible = false
+
+-- ==================== UI ====================
+local screen = Instance.new("ScreenGui")
+screen.Name = "LethalDashV2"
+screen.ResetOnSpawn = false
+screen.Parent = lp:WaitForChild("PlayerGui")
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0, 70, 0, 50)
+button.Position = UDim2.new(0, 20, 0, 100)
+button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+button.Text = "ON"
+button.TextColor3 = Color3.new(1,1,1)
+button.Font = Enum.Font.GothamBold
+button.TextScaled = true
+button.Parent = screen
+
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
+
+button.MouseButton1Click:Connect(function()
+    vu5 = not vu5
+    button.Text = vu5 and "ON" or "OFF"
+    button.BackgroundColor3 = vu5 and Color3.fromRGB(0,170,255) or Color3.fromRGB(100,100,100)
 end)
-local v84 = Instance.new("TextLabel")
-v84.Name = "InfoDesc"
-v84.Size = UDim2.new(1, - 20, 0, 34)
-v84.Position = UDim2.new(0, 10, 0, 32)
-v84.BackgroundTransparency = 1
-v84.TextWrapped = true
-v84.Text = "Join our discord for more Scripts!\nhttps://discord.gg/5x4xbPvuSc"
-v84.TextColor3 = Color3.fromRGB(40, 40, 40)
-v84.Font = Enum.Font.Gotham
-v84.TextSize = 12
-v84.TextXAlignment = Enum.TextXAlignment.Left
-v84.TextYAlignment = Enum.TextYAlignment.Top
-v84.Parent = v_u_81
-v84.ZIndex = 10001
-CopyBtn = Instance.new("TextButton")
-CopyBtn.Name = "InfoCopy"
-CopyBtn.Size = UDim2.new(0, 96, 0, 26)
-CopyBtn.Position = UDim2.new(0, 10, 1, - 34)
-CopyBtn.Text = "Copy Link"
-CopyBtn.Font = Enum.Font.GothamBold
-CopyBtn.TextSize = 12
-CopyBtn.BackgroundColor3 = Color3.fromRGB(30, 136, 229)
-CopyBtn.TextColor3 = Color3.new(1, 1, 1)
-CopyBtn.Parent = v_u_81
-CopyBtn.ZIndex = 10001
-Instance.new("UICorner", CopyBtn).CornerRadius = UDim.new(0, 6)
-CopyBtn.MouseButton1Click:Connect(function()
-    pcall(function()
-        if setclipboard then
-            setclipboard("https://discord.gg/5x4xbPvuSc")
-        elseif toclipboard then
-            toclipboard("https://discord.gg/5x4xbPvuSc")
-        end
-    end)
-end)
-local v_u_85 = nil
-local v_u_86 = nil
-local v_u_87 = nil
-local v_u_88 = nil
-v_u_81.InputBegan:Connect(function(p_u_89)
-    if p_u_89.UserInputType == Enum.UserInputType.MouseButton1 or p_u_89.UserInputType == Enum.UserInputType.Touch then
-        v_u_85 = true
-        v_u_87 = p_u_89.Position
-        v_u_88 = v_u_81.Position
-        p_u_89.Changed:Connect(function()
-            if p_u_89.UserInputState == Enum.UserInputState.End then
-                v_u_85 = false
-            end
-        end)
-    end
-end)
-v_u_81.InputChanged:Connect(function(p90)
-    if p90.UserInputType == Enum.UserInputType.MouseMovement or p90.UserInputType == Enum.UserInputType.Touch then
-        v_u_86 = p90
-    end
-end)
-v3.InputChanged:Connect(function(p91)
-    if p91 == v_u_86 and (v_u_85 and v_u_88) then
-        local v92 = p91.Position - v_u_87
-        v_u_81.Position = UDim2.new(v_u_88.X.Scale, math.clamp(v_u_88.X.Offset + v92.X, 0, math.max(0, workspace.CurrentCamera.ViewportSize.X - v_u_81.AbsoluteSize.X)), v_u_88.Y.Scale, math.clamp(v_u_88.Y.Offset + v92.Y, 0, math.max(0, workspace.CurrentCamera.ViewportSize.Y - v_u_81.AbsoluteSize.Y)))
-    end
-end)
-local v_u_93 = {}
-local function v_u_98()
-    local v94, v95, v96 = pairs(v_u_93)
-    while true do
-        local v_u_97
-        v96, v_u_97 = v94(v95, v96)
-        if v96 == nil then
-            break
-        end
-        if v_u_97 and v_u_97.Disconnect then
-            pcall(function()
-                v_u_97:Disconnect()
-            end)
-        end
-    end
-    v_u_93 = {}
-end
-local function v_u_99()
-    if v_u_15 and not v_u_16 then
-        if v_u_14 <= tick() - v_u_13 then
-            v_u_13 = tick()
-            
-            task.delay(1.7, function()
-                if v_u_15 and not v_u_16 then
-                    pcall(v_u_55)
-                end
-            end)
-            
-            task.spawn(function()
-                v_u_80(v_u_17)
-            end)
-        end
-    end
-end
-local function v_u_103(p100)
-    if p100 then
-        local v101 = p100.Animation
-        if v101 then
-            local v102 = tostring(v101.AnimationId or "")
-            if string.find(v102, "12296113986", 1, true) then
-                v_u_99()
-            end
-        end
-    else
-        return
-    end
-end
-local function v_u_113(p104)
-    v_u_98()
-    v_u_10 = p104
-    v_u_11 = v_u_10:FindFirstChildOfClass("Humanoid") or v_u_10:WaitForChild("Humanoid", 5)
-    v_u_12 = v_u_10:FindFirstChild("HumanoidRootPart") or v_u_10:WaitForChild("HumanoidRootPart", 5)
-    if v_u_11 and v_u_12 then
-        local v105, v106 = pcall(function()
-            return v_u_11.AnimationPlayed:Connect(v_u_103)
-        end)
-        if v105 and v106 then
-            table.insert(v_u_93, v106)
-        end
-        local v_u_107 = v_u_11:FindFirstChildOfClass("Animator")
-        if v_u_107 then
-            local v108, v109 = pcall(function()
-                return v_u_107.AnimationPlayed:Connect(v_u_103)
-            end)
-            if v108 and v109 then
-                table.insert(v_u_93, v109)
-            end
-        end
-        local v112 = v_u_10.DescendantAdded:Connect(function(p110)
-            if p110:IsA("Animation") then
-                local v111 = tostring(p110.AnimationId or "")
-                if string.find(v111, "12296113986", 1, true) then
-                    v_u_99()
+
+-- ==================== ANIMATION TRIGGER ====================
+local function onAnimationPlayed(track)
+    if not vu5 then return end
+    if debounce then return end
+
+    if track.Animation and track.Animation.AnimationId == AnimationId then
+        task.spawn(function()
+            task.wait(1.7)
+
+            if lp.Character then
+                Character = lp.Character
+                Humanoid = Character:FindFirstChildOfClass("Humanoid")
+                RootPart = Character:FindFirstChild("HumanoidRootPart")
+
+                if Humanoid and RootPart then
+                    StickDash()
                 end
             end
         end)
-        table.insert(v_u_93, v112)
     end
 end
-v_u_5.CharacterAdded:Connect(function(p114)
-    task.wait(0.1)
-    pcall(v_u_113, p114)
-end)
-if v_u_5.Character then
-    pcall(v_u_113, v_u_5.Character)
+
+local function setupCharacter(char)
+    Character = char
+    Humanoid = char:WaitForChild("Humanoid")
+    RootPart = char:WaitForChild("HumanoidRootPart")
+
+    Humanoid.AnimationPlayed:Connect(onAnimationPlayed)
 end
+
+if lp.Character then
+    setupCharacter(lp.Character)
+end
+
+lp.CharacterAdded:Connect(setupCharacter)
+
+print("Lethal Dash V2 FIXED + SMOOTH 🔥")

@@ -8,7 +8,8 @@ local vu5 = true
 local Animations = {
     ["rbxassetid://98542310119798"] = 1.5,
     ["rbxassetid://95034083206292"] = 2.6,
-    ["rbxassetid://12296113986"] = 1.7
+    ["rbxassetid://12296113986"] = 1.7,
+    ["rbxassetid://94638356008696"] = 3.35
 }
 
 local Character, Humanoid, RootPart

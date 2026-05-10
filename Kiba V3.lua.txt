@@ -6,8 +6,8 @@ local vu5 = true
 
 -- ==================== ANIMATIONS ====================
 local Animations = {
-    ["rbxassetid://98542310119798"] = 1.5,
-    ["rbxassetid://95034083206292"] = 2.6,
+    ["rbxassetid://98542310119798"] = 3.3,
+    ["rbxassetid://95034083206292"] = 3.1,
     ["rbxassetid://12296113986"] = 1.7,
     ["rbxassetid://94638356008696"] = 3.35
 }
@@ -26,11 +26,14 @@ local function getNearestTarget()
 
     for _, v in pairs(workspace:GetDescendants()) do
         if v:IsA("Model") and v ~= Character then
+
             local hum = v:FindFirstChildOfClass("Humanoid")
             local hrp = v:FindFirstChild("HumanoidRootPart")
 
             if hum and hrp and hum.Health > 0 then
-                local dist = (hrp.Position - RootPart.Position).Magnitude
+
+                local dist =
+                    (hrp.Position - RootPart.Position).Magnitude
 
                 if dist < shortest then
                     shortest = dist
@@ -78,6 +81,7 @@ end
 
 -- ==================== DASH ====================
 local function StickDash()
+
     if debounce then
         return
     end
@@ -89,9 +93,10 @@ local function StickDash()
         return
     end
 
-    local target = getNearestTarget()
+    -- LOCK TARGET 1 LẦN
+    local lockedTarget = getNearestTarget()
 
-    if not target then
+    if not lockedTarget then
         debounce = false
         return
     end
@@ -100,7 +105,7 @@ local function StickDash()
     local oldSpeed = Humanoid.WalkSpeed
     local oldJump = Humanoid.JumpPower
 
-    -- LOCK
+    -- LOCK PLAYER
     Humanoid.WalkSpeed = 0
     Humanoid.JumpPower = 0
     Humanoid.PlatformStand = true
@@ -119,24 +124,48 @@ local function StickDash()
     local con
     con = RunService.Heartbeat:Connect(function()
 
-        if not target or not target.Parent then
+        -- TARGET BIẾN MẤT
+        if not lockedTarget
+        or not lockedTarget.Parent then
+
             con:Disconnect()
+
+            restoreState(oldSpeed, oldJump)
+            debounce = false
+
+            return
+        end
+
+        -- TARGET CHẾT
+        local targetHum =
+            lockedTarget.Parent:FindFirstChildOfClass("Humanoid")
+
+        if not targetHum
+        or targetHum.Health <= 0 then
+
+            con:Disconnect()
+
+            restoreState(oldSpeed, oldJump)
+            debounce = false
+
             return
         end
 
         local elapsed = tick() - start
 
         if elapsed < 0.7 then
+
             local pos =
-                target.Position -
-                target.CFrame.LookVector * 0.3
+                lockedTarget.Position -
+                lockedTarget.CFrame.LookVector * 0.3
 
             RootPart.Velocity = Vector3.zero
             RootPart.RotVelocity = Vector3.zero
 
             RootPart.CFrame =
-                CFrame.new(pos, target.Position) *
+                CFrame.new(pos, lockedTarget.Position) *
                 CFrame.Angles(math.rad(85), 0, 0)
+
         else
             con:Disconnect()
         end
@@ -169,7 +198,9 @@ local function StickDash()
 
     -- RESTORE
     task.delay(0.8, function()
+
         restoreState(oldSpeed, oldJump)
+
         debounce = false
     end)
 end
@@ -193,6 +224,7 @@ button.Parent = screen
 Instance.new("UICorner", button).CornerRadius = UDim.new(0, 8)
 
 button.MouseButton1Click:Connect(function()
+
     vu5 = not vu5
 
     button.Text = vu5 and "ON" or "OFF"
@@ -204,6 +236,7 @@ end)
 
 -- ==================== ANIMATION DETECT ====================
 local function onAnimationPlayed(track)
+
     if not vu5 then return end
     if debounce then return end
     if not track.Animation then return end
@@ -212,15 +245,21 @@ local function onAnimationPlayed(track)
     local delayTime = Animations[animId]
 
     if delayTime then
+
         task.spawn(function()
 
-            -- WAIT KHÁC NHAU THEO ANIMATION
+            -- DELAY THEO ANIMATION
             task.wait(delayTime)
 
             if lp.Character then
+
                 Character = lp.Character
-                Humanoid = Character:FindFirstChildOfClass("Humanoid")
-                RootPart = Character:FindFirstChild("HumanoidRootPart")
+
+                Humanoid =
+                    Character:FindFirstChildOfClass("Humanoid")
+
+                RootPart =
+                    Character:FindFirstChild("HumanoidRootPart")
 
                 if Humanoid and RootPart then
                     StickDash()
@@ -232,9 +271,14 @@ end
 
 -- ==================== CHARACTER ====================
 local function setupCharacter(char)
+
     Character = char
-    Humanoid = char:WaitForChild("Humanoid")
-    RootPart = char:WaitForChild("HumanoidRootPart")
+
+    Humanoid =
+        char:WaitForChild("Humanoid")
+
+    RootPart =
+        char:WaitForChild("HumanoidRootPart")
 
     Humanoid.AnimationPlayed:Connect(onAnimationPlayed)
 end

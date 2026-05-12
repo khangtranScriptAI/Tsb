@@ -7,7 +7,7 @@ local LocalPlayer = Players.LocalPlayer
 
 -- SETTINGS
 local SPEED = 20
-local DISTANCE = 3
+local DISTANCE = 5
 local MODE = "Orbit"
 local TARGET = nil
 

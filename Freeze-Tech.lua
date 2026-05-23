@@ -1,4 +1,4 @@
--- // FreezeTech | Animation → Dash Q → Freeze (vẫn tương tác được)
+-- // FreezeTech | Animation 10503381238 → Dash Q → Freeze (ngửa lên + vẫn tương tác)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -11,14 +11,15 @@ local player = Players.LocalPlayer
 local ENABLED = true
 local COOLDOWN = false
 
-local DASH_DELAY = 0.2
-local FREEZE_DELAY = 0.2
-local FREEZE_DURATION = 0.4
-local COOLDOWN_TIME = 5
+local DASH_DELAY = 0.225        -- Delay trước khi bấm Q dash
+local FREEZE_DELAY = 0.2        -- Sau khi bấm Q bao lâu thì freeze
+local FREEZE_DURATION = 0.4     -- Thời gian freeze
+local COOLDOWN_TIME = 5         -- Cooldown 5 giây
+local TILT_ANGLE = -30          -- Góc ngửa lên (âm = ngửa lên trời)
 
 local TARGET_ANIMATION = "10503381238"
 
--- // GUI
+-- // GUI SETUP
 local gui = Instance.new("ScreenGui")
 gui.Name = "FreezeTechGUI"
 gui.ResetOnSpawn = false
@@ -31,6 +32,7 @@ if not gui.Parent then
 end
 
 local button = Instance.new("TextButton")
+button.Name = "Toggle"
 button.Parent = gui
 button.Size = UDim2.new(0, 60, 0, 20)
 button.Position = UDim2.new(0.5, -30, 0.5, -10)
@@ -43,12 +45,15 @@ button.TextColor3 = Color3.fromRGB(255, 255, 255)
 button.AutoButtonColor = false
 button.ZIndex = 10
 
-Instance.new("UICorner", button).CornerRadius = UDim.new(0, 6)
+local corner = Instance.new("UICorner", button)
+corner.CornerRadius = UDim.new(0, 6)
+
 local stroke = Instance.new("UIStroke", button)
 stroke.Color = Color3.fromRGB(255, 255, 255)
 stroke.Thickness = 1.5
 stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
+-- Rainbow text
 task.spawn(function()
     local hue = 0
     while task.wait() do
@@ -63,7 +68,9 @@ button.MouseButton1Click:Connect(function()
 end)
 
 -- // DRAG
-local dragging, dragStart, startPos = false, nil, nil
+local dragging = false
+local dragStart = nil
+local startPos = nil
 
 button.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -83,11 +90,17 @@ UserInputService.InputChanged:Connect(function(input)
     if not dragging then return end
     if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
         local delta = input.Position - dragStart
-        button.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        button.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
     end
 end)
 
--- // FREEZE (PlatformStand - không giật, vẫn tương tác)
+-- // CORE FUNCTIONS
+
 local function doFreeze(char, duration)
     local humanoid = char:FindFirstChild("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
@@ -96,6 +109,14 @@ local function doFreeze(char, duration)
     local oldPlatformStand = humanoid.PlatformStand
     local freezeCFrame = root.CFrame
     local startTime = tick()
+
+    -- BodyGyro giữ góc ngửa lên
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.Parent = root
+    bodyGyro.MaxTorque = Vector3.new(1, 1, 1) * math.huge
+    bodyGyro.P = 100000
+    bodyGyro.D = 1000
+    bodyGyro.CFrame = freezeCFrame * CFrame.Angles(0, 0, math.rad(TILT_ANGLE))
 
     humanoid.PlatformStand = true
 
@@ -106,13 +127,19 @@ local function doFreeze(char, duration)
             if humanoid and humanoid.Parent then
                 humanoid.PlatformStand = oldPlatformStand
             end
+            if bodyGyro then
+                bodyGyro:Destroy()
+            end
             return
         end
 
         if root and root.Parent then
-            root.CFrame = freezeCFrame * CFrame.Angles(math.rad(-30), 0, 0)
+            root.CFrame = freezeCFrame
             root.AssemblyLinearVelocity = Vector3.zero
             root.AssemblyAngularVelocity = Vector3.zero
+        end
+        if bodyGyro and bodyGyro.Parent then
+            bodyGyro.CFrame = freezeCFrame * CFrame.Angles(0, 0, math.rad(TILT_ANGLE))
         end
         if humanoid and humanoid.Parent then
             humanoid.PlatformStand = true
@@ -132,8 +159,12 @@ local function onCharacterAdded(char)
         COOLDOWN = true
 
         task.wait(DASH_DELAY)
-        if not char.Parent then COOLDOWN = false return end
+        if not char.Parent then
+            COOLDOWN = false
+            return
+        end
 
+        -- Bấm Q dash game
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, nil)
         task.wait(0.03)
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, nil)
@@ -151,7 +182,9 @@ end
 if player.Character then
     onCharacterAdded(player.Character)
 end
+
 player.CharacterAdded:Connect(onCharacterAdded)
+
 player.CharacterAdded:Connect(function()
     COOLDOWN = false
 end)

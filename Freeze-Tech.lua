@@ -110,6 +110,7 @@ local function doFreeze(char, duration)
         end
 
         if root and root.Parent then
+            root.CFrame = freezeCFrame * CFrame.Angles(math.rad(-30), 0, 0)
             root.CFrame = freezeCFrame
             root.AssemblyLinearVelocity = Vector3.zero
             root.AssemblyAngularVelocity = Vector3.zero

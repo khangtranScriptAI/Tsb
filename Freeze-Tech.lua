@@ -11,9 +11,9 @@ local player = Players.LocalPlayer
 local ENABLED = true
 local COOLDOWN = false
 
-local DASH_DELAY = 0.15
+local DASH_DELAY = 0.17
 local FREEZE_DELAY = 0.2
-local FREEZE_DURATION = 0.3
+local FREEZE_DURATION = 0.4
 local COOLDOWN_TIME = 5
 
 local TARGET_ANIMATION = "10503381238"

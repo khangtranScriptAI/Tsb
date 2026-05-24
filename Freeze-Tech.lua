@@ -13,10 +13,10 @@ local ENABLED = true
 local COOLDOWN = false
 
 local DASH_DELAY = 0.225        -- Delay trước khi bấm Q dash
-local FREEZE_DELAY = 0.1       -- Sau khi bấm Q bao lâu thì freeze
-local FREEZE_DURATION = 0.2     -- Thời gian freeze
+local FREEZE_DELAY = 0.1        -- Sau khi bấm Q bao lâu thì freeze
+local FREEZE_DURATION = 0.4     -- Thời gian freeze
 local COOLDOWN_TIME = 5         -- Cooldown 5 giây
-local TILT_ANGLE = -30          -- Góc ngửa lên (âm = ngửa lên trời)
+local TILT_ANGLE = 30           -- Góc ngửa lên (âm = ngửa lên trời)
 
 local TARGET_ANIMATION = "10503381238"
 
@@ -124,7 +124,7 @@ local function doFreeze(char, duration)
         end
 
         if root and root.Parent then
-            root.CFrame = CFrame.new(freezePos) * CFrame.Angles(0, 0, math.rad(TILT_ANGLE))
+            root.CFrame = CFrame.new(freezePos) * CFrame.Angles(0, math.rad(TILT_ANGLE), 0)
             root.AssemblyLinearVelocity = Vector3.zero
             root.AssemblyAngularVelocity = Vector3.zero
         end

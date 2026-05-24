@@ -1,4 +1,5 @@
--- // FreezeTech | Animation 10503381238 → Dash Q → Freeze (ngửa lên + vẫn tương tác)
+-- // FreezeTech | Animation 10503381238 → Dash Q → Freeze (ngửa lên + tương tác)
+-- // HOÀN THIỆN
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -12,8 +13,8 @@ local ENABLED = true
 local COOLDOWN = false
 
 local DASH_DELAY = 0.225        -- Delay trước khi bấm Q dash
-local FREEZE_DELAY = 0.2        -- Sau khi bấm Q bao lâu thì freeze
-local FREEZE_DURATION = 0.4     -- Thời gian freeze
+local FREEZE_DELAY = 0.1       -- Sau khi bấm Q bao lâu thì freeze
+local FREEZE_DURATION = 0.2     -- Thời gian freeze
 local COOLDOWN_TIME = 5         -- Cooldown 5 giây
 local TILT_ANGLE = -30          -- Góc ngửa lên (âm = ngửa lên trời)
 
@@ -62,6 +63,7 @@ task.spawn(function()
     end
 end)
 
+-- Toggle ON/OFF
 button.MouseButton1Click:Connect(function()
     ENABLED = not ENABLED
     button.Text = ENABLED and "ON" or "OFF"
@@ -99,24 +101,15 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
--- // CORE FUNCTIONS
-
+-- // FREEZE FUNCTION
 local function doFreeze(char, duration)
     local humanoid = char:FindFirstChild("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
     if not humanoid or not root then return end
 
     local oldPlatformStand = humanoid.PlatformStand
-    local freezeCFrame = root.CFrame
+    local freezePos = root.Position
     local startTime = tick()
-
-    -- BodyGyro giữ góc ngửa lên
-    local bodyGyro = Instance.new("BodyGyro")
-    bodyGyro.Parent = root
-    bodyGyro.MaxTorque = Vector3.new(1, 1, 1) * math.huge
-    bodyGyro.P = 100000
-    bodyGyro.D = 1000
-    bodyGyro.CFrame = freezeCFrame * CFrame.Angles(0, 0, math.rad(TILT_ANGLE))
 
     humanoid.PlatformStand = true
 
@@ -127,19 +120,13 @@ local function doFreeze(char, duration)
             if humanoid and humanoid.Parent then
                 humanoid.PlatformStand = oldPlatformStand
             end
-            if bodyGyro then
-                bodyGyro:Destroy()
-            end
             return
         end
 
         if root and root.Parent then
-            root.CFrame = freezeCFrame
+            root.CFrame = CFrame.new(freezePos) * CFrame.Angles(0, 0, math.rad(TILT_ANGLE))
             root.AssemblyLinearVelocity = Vector3.zero
             root.AssemblyAngularVelocity = Vector3.zero
-        end
-        if bodyGyro and bodyGyro.Parent then
-            bodyGyro.CFrame = freezeCFrame * CFrame.Angles(0, 0, math.rad(TILT_ANGLE))
         end
         if humanoid and humanoid.Parent then
             humanoid.PlatformStand = true
@@ -147,44 +134,51 @@ local function doFreeze(char, duration)
     end)
 end
 
--- // MAIN
+-- // MAIN LOGIC
 local function onCharacterAdded(char)
     local humanoid = char:WaitForChild("Humanoid")
     local animator = humanoid:WaitForChild("Animator")
 
     animator.AnimationPlayed:Connect(function(track)
+        -- Kiểm tra đúng animation
         if track.Animation.AnimationId ~= "rbxassetid://" .. TARGET_ANIMATION then return end
         if not ENABLED or COOLDOWN then return end
 
         COOLDOWN = true
 
+        -- Delay trước khi dash
         task.wait(DASH_DELAY)
         if not char.Parent then
             COOLDOWN = false
             return
         end
 
-        -- Bấm Q dash game
+        -- Bấm Q để dash game
         VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, nil)
         task.wait(0.03)
         VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, nil)
 
+        -- Đợi rồi freeze
         task.wait(FREEZE_DELAY)
         if char.Parent and humanoid.Parent then
             doFreeze(char, FREEZE_DURATION)
         end
 
+        -- Cooldown
         task.wait(COOLDOWN_TIME)
         COOLDOWN = false
     end)
 end
 
+-- Áp dụng cho character hiện tại
 if player.Character then
     onCharacterAdded(player.Character)
 end
 
+-- Áp dụng cho character sau khi respawn
 player.CharacterAdded:Connect(onCharacterAdded)
 
+-- Reset cooldown khi chết
 player.CharacterAdded:Connect(function()
     COOLDOWN = false
 end)

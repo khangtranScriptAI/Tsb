@@ -1,5 +1,5 @@
 -- // FreezeTech | Animation 10503381238 → Dash Q → Freeze
--- // FIXED: ngửa lên không bị reset
+-- // PERFECT FREEZE VERSION 🔥
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -12,11 +12,12 @@ local player = Players.LocalPlayer
 local ENABLED = true
 local COOLDOWN = false
 
-local DASH_DELAY = 0.23
+local DASH_DELAY = 0.235
 local FREEZE_DELAY = 0.15
-local FREEZE_DURATION = 0.4
+local FREEZE_DURATION = 0.7
 local COOLDOWN_TIME = 5
 
+-- góc freeze
 local TILT_ANGLE = 35
 
 local TARGET_ANIMATION = "10503381238"
@@ -48,13 +49,15 @@ button.AutoButtonColor = false
 
 Instance.new("UICorner", button).CornerRadius = UDim.new(0,7)
 
-local stroke = Instance.new("UIStroke", button)
+local stroke = Instance.new("UIStroke")
+stroke.Parent = button
 stroke.Thickness = 1.5
 stroke.Color = Color3.new(1,1,1)
 
 --// Rainbow text
 task.spawn(function()
     local h = 0
+
     while task.wait() do
         h = (h + 0.005) % 1
         button.TextColor3 = Color3.fromHSV(h,1,1)
@@ -63,16 +66,19 @@ end)
 
 --// Toggle
 button.MouseButton1Click:Connect(function()
+
     ENABLED = not ENABLED
+
     button.Text = ENABLED and "ON" or "OFF"
 end)
 
---// Drag
+--// Drag GUI
 local dragging = false
 local dragStart
 local startPos
 
 button.InputBegan:Connect(function(input)
+
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
 
@@ -83,14 +89,19 @@ button.InputBegan:Connect(function(input)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
+
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
+
         dragging = false
     end
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-    if not dragging then return end
+
+    if not dragging then
+        return
+    end
 
     if input.UserInputType == Enum.UserInputType.MouseMovement
     or input.UserInputType == Enum.UserInputType.Touch then
@@ -106,8 +117,9 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
---// FREEZE (FIXED)
+--// FREEZE
 local function doFreeze(char, duration)
+
     local humanoid = char:FindFirstChild("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
 
@@ -116,30 +128,73 @@ local function doFreeze(char, duration)
     end
 
     local freezePos = root.Position
+    local freezeLook = root.CFrame.LookVector
+
     local start = tick()
 
+    -- disable autorotate
+    humanoid.AutoRotate = false
     humanoid.PlatformStand = true
 
+    -- BodyGyro
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.Parent = root
+    bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.P = 50000
+    bodyGyro.D = 1000
+
+    -- BodyPosition
+    local bodyPos = Instance.new("BodyPosition")
+    bodyPos.Parent = root
+    bodyPos.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyPos.P = 50000
+    bodyPos.D = 1000
+    bodyPos.Position = freezePos
+
     local conn
-    conn = RunService.Stepped:Connect(function()
+    conn = RunService.RenderStepped:Connect(function()
+
         if not char.Parent then
+
             conn:Disconnect()
+
+            bodyGyro:Destroy()
+            bodyPos:Destroy()
+
             return
         end
 
         if tick() - start >= duration then
+
             conn:Disconnect()
-            if humanoid and humanoid.Parent then
-                humanoid.PlatformStand = false
-            end
+
+            bodyGyro:Destroy()
+            bodyPos:Destroy()
+
+            humanoid.PlatformStand = false
+            humanoid.AutoRotate = true
+
             return
         end
 
-        -- ✅ FIX: dùng root.CFrame.Rotation thay vì (current - current.Position).Rotation
-        local rotation = root.CFrame.Rotation
+        -- giữ vị trí
+        bodyPos.Position = freezePos
 
-        root.CFrame = CFrame.new(freezePos) * rotation * CFrame.Angles(math.rad(TILT_ANGLE), 0, 0)
+        -- freeze ngửa mặt lên 🔥
+        local targetCFrame =
+            CFrame.lookAt(
+                freezePos,
+                freezePos + freezeLook
+            )
+            * CFrame.Angles(
+                math.rad(45), -- ngửa lên
+                0,
+                math.rad(TILT_ANGLE)
+            )
 
+        bodyGyro.CFrame = targetCFrame
+
+        -- khóa velocity
         root.AssemblyLinearVelocity = Vector3.zero
         root.AssemblyAngularVelocity = Vector3.zero
 
@@ -149,13 +204,17 @@ end
 
 --// MAIN
 local function setupCharacter(char)
+
     local humanoid = char:WaitForChild("Humanoid")
     local animator = humanoid:WaitForChild("Animator")
 
     animator.AnimationPlayed:Connect(function(track)
 
         local anim = track.Animation
-        if not anim then return end
+
+        if not anim then
+            return
+        end
 
         if anim.AnimationId ~= "rbxassetid://"..TARGET_ANIMATION then
             return
@@ -174,9 +233,22 @@ local function setupCharacter(char)
             return
         end
 
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
+        -- press Q dash
+        VirtualInputManager:SendKeyEvent(
+            true,
+            Enum.KeyCode.Q,
+            false,
+            game
+        )
+
         task.wait(0.03)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
+
+        VirtualInputManager:SendKeyEvent(
+            false,
+            Enum.KeyCode.Q,
+            false,
+            game
+        )
 
         task.wait(FREEZE_DELAY)
 
@@ -185,6 +257,7 @@ local function setupCharacter(char)
         end
 
         task.wait(COOLDOWN_TIME)
+
         COOLDOWN = false
     end)
 end
@@ -194,6 +267,8 @@ if player.Character then
 end
 
 player.CharacterAdded:Connect(function(char)
+
     COOLDOWN = false
+
     setupCharacter(char)
 end)

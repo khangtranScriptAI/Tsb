@@ -1,5 +1,5 @@
 -- // FreezeTech | Animation 10503381238 → Dash Q → Freeze
--- // PERFECT FREEZE VERSION 🔥
+-- // PERFECT FREEZE VERSION 🔥 + Animation 10479335397 → Tạm khóa 5s
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -11,16 +11,19 @@ local player = Players.LocalPlayer
 --// SETTINGS
 local ENABLED = true
 local COOLDOWN = false
+local DISABLED_TIMER = false    -- Tạm khóa khi trúng animation 10479335397
 
 local DASH_DELAY = 0.235
-local FREEZE_DELAY = 0.15
+local FREEZE_DELAY = 0.23
 local FREEZE_DURATION = 0.7
 local COOLDOWN_TIME = 5
+local DISABLE_DURATION = 5      -- Thời gian tạm khóa
 
 -- góc freeze
 local TILT_ANGLE = 35
 
 local TARGET_ANIMATION = "10503381238"
+local DISABLE_ANIMATION = "10479335397"  -- Animation gây tạm khóa
 
 --// GUI
 local gui = Instance.new("ScreenGui")
@@ -54,22 +57,23 @@ stroke.Parent = button
 stroke.Thickness = 1.5
 stroke.Color = Color3.new(1,1,1)
 
---// Rainbow text
+--// Rainbow text (tắt khi đang tạm khóa)
+local rainbowHue = 0
 task.spawn(function()
-    local h = 0
-
     while task.wait() do
-        h = (h + 0.005) % 1
-        button.TextColor3 = Color3.fromHSV(h,1,1)
+        if not DISABLED_TIMER then
+            rainbowHue = (rainbowHue + 0.005) % 1
+            button.TextColor3 = Color3.fromHSV(rainbowHue, 1, 1)
+        end
     end
 end)
 
 --// Toggle
 button.MouseButton1Click:Connect(function()
-
     ENABLED = not ENABLED
-
-    button.Text = ENABLED and "ON" or "OFF"
+    if not DISABLED_TIMER then
+        button.Text = ENABLED and "ON" or "OFF"
+    end
 end)
 
 --// Drag GUI
@@ -78,7 +82,6 @@ local dragStart
 local startPos
 
 button.InputBegan:Connect(function(input)
-
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
 
@@ -89,7 +92,6 @@ button.InputBegan:Connect(function(input)
 end)
 
 UserInputService.InputEnded:Connect(function(input)
-
     if input.UserInputType == Enum.UserInputType.MouseButton1
     or input.UserInputType == Enum.UserInputType.Touch then
 
@@ -98,7 +100,6 @@ UserInputService.InputEnded:Connect(function(input)
 end)
 
 UserInputService.InputChanged:Connect(function(input)
-
     if not dragging then
         return
     end
@@ -119,7 +120,6 @@ end)
 
 --// FREEZE
 local function doFreeze(char, duration)
-
     local humanoid = char:FindFirstChild("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
 
@@ -153,27 +153,19 @@ local function doFreeze(char, duration)
 
     local conn
     conn = RunService.RenderStepped:Connect(function()
-
         if not char.Parent then
-
             conn:Disconnect()
-
             bodyGyro:Destroy()
             bodyPos:Destroy()
-
             return
         end
 
         if tick() - start >= duration then
-
             conn:Disconnect()
-
             bodyGyro:Destroy()
             bodyPos:Destroy()
-
             humanoid.PlatformStand = false
             humanoid.AutoRotate = true
-
             return
         end
 
@@ -187,7 +179,7 @@ local function doFreeze(char, duration)
                 freezePos + freezeLook
             )
             * CFrame.Angles(
-                math.rad(45), -- ngửa lên
+                math.rad(30), -- ngửa lên
                 0,
                 math.rad(TILT_ANGLE)
             )
@@ -202,62 +194,61 @@ local function doFreeze(char, duration)
     end)
 end
 
+--// TẠM KHÓA KHI TRÚNG ANIMATION 10479335397
+local function disableScript()
+    DISABLED_TIMER = true
+    button.Text = "WAIT 5s"
+    button.TextColor3 = Color3.fromRGB(255, 80, 80)  -- Đỏ
+
+    task.wait(DISABLE_DURATION)
+
+    DISABLED_TIMER = false
+    button.Text = ENABLED and "ON" or "OFF"
+end
+
 --// MAIN
 local function setupCharacter(char)
-
     local humanoid = char:WaitForChild("Humanoid")
     local animator = humanoid:WaitForChild("Animator")
 
     animator.AnimationPlayed:Connect(function(track)
-
         local anim = track.Animation
+        if not anim then return end
 
-        if not anim then
+        local animId = anim.AnimationId
+
+        -- 🔥 Nếu là animation tạm khóa (10479335397)
+        if animId == "rbxassetid://"..DISABLE_ANIMATION then
+            if not DISABLED_TIMER then
+                task.spawn(disableScript)  -- Chạy riêng không block animation khác
+            end
             return
         end
 
-        if anim.AnimationId ~= "rbxassetid://"..TARGET_ANIMATION then
-            return
-        end
-
-        if not ENABLED or COOLDOWN then
-            return
-        end
+        -- Nếu là animation dash (10503381238)
+        if animId ~= "rbxassetid://"..TARGET_ANIMATION then return end
+        if not ENABLED or COOLDOWN then return end
+        if DISABLED_TIMER then return end  -- Đang tạm khóa thì không làm gì
 
         COOLDOWN = true
 
         task.wait(DASH_DELAY)
-
         if not char.Parent then
             COOLDOWN = false
             return
         end
 
         -- press Q dash
-        VirtualInputManager:SendKeyEvent(
-            true,
-            Enum.KeyCode.Q,
-            false,
-            game
-        )
-
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
         task.wait(0.03)
-
-        VirtualInputManager:SendKeyEvent(
-            false,
-            Enum.KeyCode.Q,
-            false,
-            game
-        )
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 
         task.wait(FREEZE_DELAY)
-
         if char.Parent then
             doFreeze(char, FREEZE_DURATION)
         end
 
         task.wait(COOLDOWN_TIME)
-
         COOLDOWN = false
     end)
 end
@@ -267,8 +258,7 @@ if player.Character then
 end
 
 player.CharacterAdded:Connect(function(char)
-
     COOLDOWN = false
-
+    DISABLED_TIMER = false
     setupCharacter(char)
 end)

@@ -15,7 +15,7 @@ local COOLDOWN = false
 local DISABLED_TIMER = false
 
 local DASH_DELAY = 0.236
-local FREEZE_DELAY = 0.15
+local FREEZE_DELAY = 0.2
 local FREEZE_DURATION = 0.67
 local COOLDOWN_TIME = 5
 local DISABLE_DURATION = 5
@@ -273,7 +273,7 @@ local function doFreeze(char, duration)
 
         local targetCFrame =
             CFrame.lookAt(freezePos, freezePos + freezeLook)
-            * CFrame.Angles(math.rad(50), 0, math.rad(TILT_ANGLE))
+            * CFrame.Angles(math.rad(35), 0, math.rad(TILT_ANGLE))
 
         bodyGyro.CFrame = targetCFrame
 

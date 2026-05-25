@@ -1,5 +1,5 @@
 -- // FreezeTech | Animation 10503381238 → Dash Q → Freeze
--- // FULL FIXED NGỬA LÊN
+-- // FIXED: ngửa lên không bị reset
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -17,7 +17,7 @@ local FREEZE_DELAY = 0.15
 local FREEZE_DURATION = 0.4
 local COOLDOWN_TIME = 5
 
-local TILT_ANGLE = -45 -- ngửa lên mạnh
+local TILT_ANGLE = 35
 
 local TARGET_ANIMATION = "10503381238"
 
@@ -106,7 +106,7 @@ UserInputService.InputChanged:Connect(function(input)
     end
 end)
 
---// FREEZE
+--// FREEZE (FIXED)
 local function doFreeze(char, duration)
     local humanoid = char:FindFirstChild("Humanoid")
     local root = char:FindFirstChild("HumanoidRootPart")
@@ -129,25 +129,17 @@ local function doFreeze(char, duration)
 
         if tick() - start >= duration then
             conn:Disconnect()
-
             if humanoid and humanoid.Parent then
                 humanoid.PlatformStand = false
             end
-
             return
         end
 
-        -- giữ hướng hiện tại
-        local current = root.CFrame
-        local rotation = (current - current.Position).Rotation
+        -- ✅ FIX: dùng root.CFrame.Rotation thay vì (current - current.Position).Rotation
+        local rotation = root.CFrame.Rotation
 
-        -- ngửa lên theo X thật
-        root.CFrame =
-            CFrame.new(freezePos)
-            * rotation
-            * CFrame.Angles(math.rad(TILT_ANGLE),0,0)
+        root.CFrame = CFrame.new(freezePos) * rotation * CFrame.Angles(math.rad(TILT_ANGLE), 0, 0)
 
-        -- freeze velocity
         root.AssemblyLinearVelocity = Vector3.zero
         root.AssemblyAngularVelocity = Vector3.zero
 
@@ -175,7 +167,6 @@ local function setupCharacter(char)
 
         COOLDOWN = true
 
-        -- delay trước dash
         task.wait(DASH_DELAY)
 
         if not char.Parent then
@@ -183,24 +174,10 @@ local function setupCharacter(char)
             return
         end
 
-        -- press Q
-        VirtualInputManager:SendKeyEvent(
-            true,
-            Enum.KeyCode.Q,
-            false,
-            game
-        )
-
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Q, false, game)
         task.wait(0.03)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Q, false, game)
 
-        VirtualInputManager:SendKeyEvent(
-            false,
-            Enum.KeyCode.Q,
-            false,
-            game
-        )
-
-        -- delay freeze
         task.wait(FREEZE_DELAY)
 
         if char.Parent then

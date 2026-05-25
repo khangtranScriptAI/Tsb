@@ -124,7 +124,7 @@ local function doFreeze(char, duration)
         end
 
         if root and root.Parent then
-            root.CFrame = CFrame.new(freezePos) * CFrame.Angles(0, math.rad(TILT_ANGLE), 0)
+            root.CFrame = CFrame.new(freezePos) * CFrame.Angles(math.rad(TILT_ANGLE), 0, 0)
             root.AssemblyLinearVelocity = Vector3.zero
             root.AssemblyAngularVelocity = Vector3.zero
         end

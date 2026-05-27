@@ -1,4 +1,4 @@
---// ORBIT GUI FULL - ENHANCED (PURPLE THEME V2)
+--// ORBIT GUI FULL - PURPLE THEME (PLAYER LIST ATTACHED - FIXED)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -39,17 +39,10 @@ local red = Color3.fromRGB(255, 60, 60)
 local green = Color3.fromRGB(80, 220, 80)
 
 -- ==================== MAIN TOGGLE BUTTON ====================
-local mainToggle = Instance.new("Frame")
-mainToggle.Parent = gui
-mainToggle.Size = UDim2.new(0, 70, 0, 70)
-mainToggle.Position = UDim2.new(0, 20, 0.5, -35)
-mainToggle.BackgroundTransparency = 1
-mainToggle.ZIndex = 10
-
 local toggleButton = Instance.new("TextButton")
-toggleButton.Parent = mainToggle
+toggleButton.Parent = gui
 toggleButton.Size = UDim2.new(0, 60, 0, 60)
-toggleButton.Position = UDim2.new(0.5, -30, 0.5, -30)
+toggleButton.Position = UDim2.new(0, 20, 0.5, -30)
 toggleButton.BackgroundColor3 = bg1
 toggleButton.Text = ""
 toggleButton.BorderSizePixel = 0
@@ -65,25 +58,7 @@ toggleStroke.Color = purpleMain
 toggleStroke.Thickness = 2.5
 toggleStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 
--- Glow behind button
-local glowEffect = Instance.new("ImageLabel")
-glowEffect.Parent = mainToggle
-glowEffect.Size = UDim2.new(0, 80, 0, 80)
-glowEffect.Position = UDim2.new(0.5, -40, 0.5, -40)
-glowEffect.BackgroundTransparency = 1
-glowEffect.Image = "rbxassetid://6014261993"
-glowEffect.ImageColor3 = purpleMain
-glowEffect.ImageTransparency = 0.75
-glowEffect.ZIndex = 9
-
--- Pulse glow
-TweenService:Create(glowEffect, TweenInfo.new(2.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1), {
-    ImageTransparency = 0.85,
-    Size = UDim2.new(0, 90, 0, 90),
-    Position = UDim2.new(0.5, -45, 0.5, -45)
-}):Play()
-
--- Center icon
+-- Center dot icon
 local centerDot = Instance.new("Frame")
 centerDot.Parent = toggleButton
 centerDot.Size = UDim2.new(0, 14, 0, 14)
@@ -109,7 +84,7 @@ orbitDotCorner.CornerRadius = UDim.new(1, 0)
 -- Animate orbit dot
 local orbitAngle = 0
 RunService.RenderStepped:Connect(function(dt)
-    if not mainToggle.Parent then return end
+    if not toggleButton.Parent then return end
     orbitAngle = orbitAngle + 2 * dt
     local radius = 20
     orbitDot.Position = UDim2.new(0.5, math.cos(orbitAngle) * radius - 3, 0.5, math.sin(orbitAngle) * radius - 3)
@@ -138,16 +113,17 @@ statusInnerDot.BorderSizePixel = 0
 local statusInnerCorner = Instance.new("UICorner", statusInnerDot)
 statusInnerCorner.CornerRadius = UDim.new(1, 0)
 
--- ==================== MAIN MENU ====================
+-- ==================== MAIN MENU CONTAINER ====================
 local menuContainer = Instance.new("Frame")
 menuContainer.Parent = gui
-menuContainer.Size = UDim2.new(0, 380, 0, 290)
-menuContainer.Position = UDim2.new(0, 110, 0, 60)
+menuContainer.Size = UDim2.new(0, 370, 0, 290)
+menuContainer.Position = UDim2.new(0, 100, 0, 60)
 menuContainer.BackgroundTransparency = 1
 menuContainer.Visible = false
 menuContainer.ZIndex = 5
+menuContainer.Active = true
 
--- Menu background
+-- Menu (left side)
 local menu = Instance.new("Frame")
 menu.Parent = menuContainer
 menu.Size = UDim2.new(0, 260, 0, 290)
@@ -175,6 +151,74 @@ menuGradient.Color = ColorSequence.new({
     ColorSequenceKeypoint.new(1, Color3.fromRGB(20, 16, 32))
 })
 menuGradient.Rotation = -30
+
+-- ==================== PLAYER LIST PANEL ====================
+local playerPanel = Instance.new("Frame")
+playerPanel.Parent = menu
+playerPanel.Size = UDim2.new(0, 110, 0, 290)
+playerPanel.Position = UDim2.new(1, 0, 0, 0)
+playerPanel.BackgroundColor3 = bg0
+playerPanel.BorderSizePixel = 0
+playerPanel.Visible = false
+playerPanel.ZIndex = 4
+playerPanel.ClipsDescendants = true
+
+local playerPanelCorner = Instance.new("UICorner", playerPanel)
+playerPanelCorner.CornerRadius = UDim.new(0, 14)
+
+local playerPanelStroke = Instance.new("UIStroke", playerPanel)
+playerPanelStroke.Color = purpleMain
+playerPanelStroke.Thickness = 1.5
+playerPanelStroke.Transparency = 0.4
+
+-- Panel title
+local panelTitle = Instance.new("Frame")
+panelTitle.Parent = playerPanel
+panelTitle.Size = UDim2.new(1, 0, 0, 38)
+panelTitle.BackgroundColor3 = purpleDark
+panelTitle.BackgroundTransparency = 0.5
+panelTitle.BorderSizePixel = 0
+panelTitle.ZIndex = 6
+
+local panelTitleCorner = Instance.new("UICorner", panelTitle)
+panelTitleCorner.CornerRadius = UDim.new(0, 14)
+
+local panelTitleGradient = Instance.new("UIGradient")
+panelTitleGradient.Parent = panelTitle
+panelTitleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, purpleDark),
+    ColorSequenceKeypoint.new(1, purpleMain)
+})
+panelTitleGradient.Rotation = 90
+
+local panelTitleText = Instance.new("TextLabel")
+panelTitleText.Parent = panelTitle
+panelTitleText.Size = UDim2.new(1, 0, 1, 0)
+panelTitleText.BackgroundTransparency = 1
+panelTitleText.Text = "Players"
+panelTitleText.TextScaled = true
+panelTitleText.Font = Enum.Font.GothamBold
+panelTitleText.TextColor3 = white
+panelTitleText.TextSize = 15
+panelTitleText.ZIndex = 7
+
+-- Player list scroller
+local playerList = Instance.new("ScrollingFrame")
+playerList.Parent = playerPanel
+playerList.Position = UDim2.new(0, 6, 0, 46)
+playerList.Size = UDim2.new(1, -12, 0, 236)
+playerList.BackgroundTransparency = 1
+playerList.ScrollBarThickness = 2
+playerList.ScrollBarImageColor3 = purpleMain
+playerList.BorderSizePixel = 0
+playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
+playerList.ZIndex = 6
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Parent = playerList
+listLayout.Padding = UDim.new(0, 3)
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.SortOrder = Enum.SortOrder.Name
 
 -- ==================== TITLE BAR ====================
 local titleBar = Instance.new("Frame")
@@ -407,7 +451,7 @@ infYield.Parent = menu
 infYield.Position = UDim2.new(0, 12, 0, 250)
 infYield.Size = UDim2.new(1, -24, 0, 14)
 infYield.BackgroundTransparency = 1
-infYield.Text = "made by zen"
+infYield.Text = "Made by KHANGG"
 infYield.TextXAlignment = Enum.TextXAlignment.Center
 infYield.Font = Enum.Font.GothamMedium
 infYield.TextColor3 = purpleMain
@@ -415,104 +459,18 @@ infYield.TextTransparency = 0.6
 infYield.TextSize = 11
 infYield.ZIndex = 6
 
--- ==================== PLAYER LIST (Right side panel) ====================
-local playerPanel = Instance.new("Frame")
-playerPanel.Parent = menuContainer
-playerPanel.Size = UDim2.new(0, 110, 0, 290)
-playerPanel.Position = UDim2.new(0, 270, 0, 0)
-playerPanel.BackgroundColor3 = bg0
-playerPanel.BorderSizePixel = 0
-playerPanel.Visible = false
-playerPanel.ZIndex = 5
+-- ==================== PLAYER LIST FUNCTIONS ====================
+local playerListVisible = false
 
-local playerPanelCorner = Instance.new("UICorner", playerPanel)
-playerPanelCorner.CornerRadius = UDim.new(0, 14)
-
-local playerPanelStroke = Instance.new("UIStroke", playerPanel)
-playerPanelStroke.Color = purpleMain
-playerPanelStroke.Thickness = 1.5
-playerPanelStroke.Transparency = 0.4
-
--- Panel title
-local panelTitle = Instance.new("Frame")
-panelTitle.Parent = playerPanel
-panelTitle.Size = UDim2.new(1, 0, 0, 38)
-panelTitle.BackgroundColor3 = purpleDark
-panelTitle.BackgroundTransparency = 0.5
-panelTitle.BorderSizePixel = 0
-panelTitle.ZIndex = 6
-
-local panelTitleCorner = Instance.new("UICorner", panelTitle)
-panelTitleCorner.CornerRadius = UDim.new(0, 14)
-
-local panelTitleGradient = Instance.new("UIGradient")
-panelTitleGradient.Parent = panelTitle
-panelTitleGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, purpleDark),
-    ColorSequenceKeypoint.new(1, purpleMain)
-})
-panelTitleGradient.Rotation = 90
-
-local panelTitleText = Instance.new("TextLabel")
-panelTitleText.Parent = panelTitle
-panelTitleText.Size = UDim2.new(1, 0, 1, 0)
-panelTitleText.BackgroundTransparency = 1
-panelTitleText.Text = "Players"
-panelTitleText.TextScaled = true
-panelTitleText.Font = Enum.Font.GothamBold
-panelTitleText.TextColor3 = white
-panelTitleText.TextSize = 15
-panelTitleText.ZIndex = 7
-
--- Player list scroller
-local playerList = Instance.new("ScrollingFrame")
-playerList.Parent = playerPanel
-playerList.Position = UDim2.new(0, 6, 0, 46)
-playerList.Size = UDim2.new(1, -12, 0, 236)
-playerList.BackgroundTransparency = 1
-playerList.ScrollBarThickness = 2
-playerList.ScrollBarImageColor3 = purpleMain
-playerList.BorderSizePixel = 0
-playerList.CanvasSize = UDim2.new(0, 0, 0, 0)
-playerList.ZIndex = 6
-
-local listLayout = Instance.new("UIListLayout")
-listLayout.Parent = playerList
-listLayout.Padding = UDim.new(0, 3)
-listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-listLayout.SortOrder = Enum.SortOrder.Name
-
--- Player list show/hide animation
 local function showPlayerPanel()
     playerPanel.Visible = true
-    playerPanel.Size = UDim2.new(0, 0, 0, 290)
-    menu.Size = UDim2.new(0, 260, 0, 290)
-    menuContainer.Size = UDim2.new(0, 260, 0, 290)
-    
-    TweenService:Create(playerPanel, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 110, 0, 290)
-    }):Play()
-    
-    TweenService:Create(menuContainer, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 380, 0, 290)
-    }):Play()
+    playerPanel.Size = UDim2.new(0, 110, 0, 290)
 end
 
 local function hidePlayerPanel()
-    TweenService:Create(playerPanel, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 290)
-    }):Play()
-    
-    TweenService:Create(menuContainer, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 260, 0, 290)
-    }):Play()
-    
-    task.wait(0.2)
     playerPanel.Visible = false
-    menu.Size = UDim2.new(0, 260, 0, 290)
 end
 
--- Refresh player list
 local function refreshPlayerList()
     for _, v in pairs(playerList:GetChildren()) do
         if v:IsA("TextButton") then
@@ -583,7 +541,30 @@ local function refreshPlayerList()
 end
 
 -- ==================== FUNCTIONALITY ====================
-local playerListVisible = false
+
+-- OPEN/CLOSE MENU
+toggleButton.MouseButton1Click:Connect(function()
+    menuContainer.Visible = not menuContainer.Visible
+    if not menuContainer.Visible then
+        playerListVisible = false
+        hidePlayerPanel()
+    end
+end)
+
+-- RIGHT CLICK TO QUICK TOGGLE ORBIT
+toggleButton.MouseButton2Click:Connect(function()
+    if enabled then
+        disableOrbit()
+    else
+        enableOrbit()
+    end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    menuContainer.Visible = false
+    playerListVisible = false
+    hidePlayerPanel()
+end)
 
 targetBtn.MouseButton1Click:Connect(function()
     playerListVisible = not playerListVisible
@@ -595,29 +576,6 @@ targetBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-mainToggle.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        menuContainer.Visible = not menuContainer.Visible
-        if not menuContainer.Visible then
-            playerListVisible = false
-            hidePlayerPanel()
-        end
-    elseif input.UserInputType == Enum.UserInputType.MouseButton2 then
-        enabled = not enabled
-        if enabled then
-            enableOrbit()
-        else
-            disableOrbit()
-        end
-    end
-end)
-
-closeBtn.MouseButton1Click:Connect(function()
-    menuContainer.Visible = false
-    playerListVisible = false
-    hidePlayerPanel()
-end)
-
 -- MODE
 modeBtn.MouseButton1Click:Connect(function()
     if MODE == "Orbit" then
@@ -625,7 +583,7 @@ modeBtn.MouseButton1Click:Connect(function()
         modeBtn.Text = "⬇️ Under"
     elseif MODE == "Under" then
         MODE = "Behind"
-        modeBtn.Text = "👁️ Behind"
+        modeBtn.Text = "⬅️ Behind"
     else
         MODE = "Orbit"
         modeBtn.Text = "🌀 Orbit"
@@ -662,6 +620,25 @@ distBox.FocusLost:Connect(function()
     end
 end)
 
+-- CHECK IF TARGET IS VALID
+local function isTargetValid()
+    if not TARGET then return false end
+    if not TARGET.Parent then return false end
+    
+    local char = TARGET.Character
+    if not char then return false end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not humanoid then return false end
+    
+    if humanoid.Health <= 0 then return false end
+    
+    return true
+end
+
 -- ENABLE/DISABLE ORBIT
 function enableOrbit()
     enabled = true
@@ -683,7 +660,7 @@ function enableOrbit()
     lastCFrame = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.CFrame
     
     orbitConnection = RunService.RenderStepped:Connect(function(dt)
-        if not TARGET or not TARGET.Character then return end
+        if not isTargetValid() then return end
         
         local targetHRP = TARGET.Character:FindFirstChild("HumanoidRootPart")
         local char = LocalPlayer.Character
@@ -745,12 +722,39 @@ function disableOrbit()
 end
 
 toggleBtn.MouseButton1Click:Connect(function()
-    if enabled then disableOrbit() else enableOrbit() end
+    if enabled then
+        disableOrbit()
+    else
+        enableOrbit()
+    end
 end)
 
+-- Handle target leaving the game
+Players.PlayerRemoving:Connect(function(plr)
+    if plr == TARGET then
+        TARGET = nil
+        targetBtn.Text = "🎯 Select Target"
+        for _, btn in pairs(playerList:GetChildren()) do
+            if btn:IsA("TextButton") then
+                TweenService:Create(btn, TweenInfo.new(0.15), {
+                    BackgroundColor3 = bg2
+                }):Play()
+            end
+        end
+        if enabled then
+            lastCFrame = nil
+        end
+    end
+end)
+
+-- Handle local player respawn
 LocalPlayer.CharacterAdded:Connect(function(char)
     if enabled then
         task.wait(0.5)
         lastCFrame = char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart.CFrame
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.AutoRotate = false
+        end
     end
 end)

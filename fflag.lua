@@ -12,15 +12,15 @@ local function applyNight()
 		settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
 	end)
 
-	Lighting.ClockTime = 0
-	Lighting.Brightness = 1.1
+	Lighting.ClockTime = 1
+	Lighting.Brightness = 2
 	Lighting.GlobalShadows = false
 
 	Lighting.Ambient = Color3.fromRGB(70, 75, 95)
 	Lighting.OutdoorAmbient = Color3.fromRGB(70, 75, 95)
 
 	Lighting.FogColor = Color3.fromRGB(40, 45, 60)
-	Lighting.FogEnd = 1200
+	Lighting.FogEnd = 1500
 end
 
 applyNight()
@@ -82,7 +82,7 @@ local function isDustEmitter(obj)
 
 	local dustKeywords = {
 		dust = true,
-		smoke = true,
+		smoke = false,
 		sand = true,
 		dirt = true,
 	}

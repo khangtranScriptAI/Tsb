@@ -1,16 +1,44 @@
 local player = game.Players.LocalPlayer
+local lighting = game.Lighting
 
--- ===== ĐỒ HỌA BAN ĐÊM (SMOOTH HƠN) =====
-pcall(function()
-	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-	settings().Rendering.EnableFRM = false
-	
-	-- Chỉnh ánh sáng về ban đêm
-	game.Lighting.TimeOfDay = "00:00:00"
-	game.Lighting.Brightness = 0.5
-	game.Lighting.OutdoorAmbient = Color3.fromRGB(20, 20, 40)
-	game.Lighting.FogEnd = 500
-	game.Lighting.FogColor = Color3.fromRGB(10, 10, 30)
+-- ===== ĐỒ HỌA BAN ĐÊM CÓ ÁNH TRĂNG (GIỮ SAU KHI CHẾT) =====
+local function setNightLighting()
+	pcall(function()
+		settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+		settings().Rendering.EnableFRM = false
+		
+		lighting.TimeOfDay = "00:00:00"
+		lighting.Brightness = 1.2
+		lighting.OutdoorAmbient = Color3.fromRGB(70, 80, 110)
+		lighting.Ambient = Color3.fromRGB(60, 65, 90)
+		lighting.FogEnd = 800
+		lighting.FogColor = Color3.fromRGB(40, 45, 70)
+		lighting.ExposureCompensation = 0.2
+		lighting.ShadowSoftness = 0.5
+		lighting.GlobalShadows = false
+		lighting.ClockTime = 1
+		lighting.GeographicLatitude = 41
+	end)
+end
+
+setNightLighting()
+
+-- ===== CHỐNG RESET ÁNH SÁNG =====
+lighting:GetPropertyChangedSignal("TimeOfDay"):Connect(function()
+	if lighting.TimeOfDay ~= "00:00:00" then setNightLighting() end
+end)
+
+lighting:GetPropertyChangedSignal("ClockTime"):Connect(function()
+	if lighting.ClockTime > 5 or lighting.ClockTime < 0.5 then setNightLighting() end
+end)
+
+task.spawn(function()
+	while true do
+		if lighting.TimeOfDay ~= "00:00:00" or lighting.ClockTime > 5 then
+			setNightLighting()
+		end
+		task.wait(1)
+	end
 end)
 
 -- ===== LOW TEXTURE =====
@@ -29,27 +57,45 @@ end
 
 workspace.DescendantAdded:Connect(lowTex)
 
--- ===== XÓA BỤI / EFFECT =====
-local function removeEffects(v)
-	if v:IsA("ParticleEmitter") or v:IsA("Trail") or v:IsA("Beam") then
+-- ===== XÓA BỤI =====
+local function removeDust(v)
+	if v:IsA("ParticleEmitter") then
 		v:Destroy()
 	end
 end
 
 for _, v in pairs(workspace:GetDescendants()) do
-	removeEffects(v)
+	removeDust(v)
 end
 
-workspace.DescendantAdded:Connect(removeEffects)
+workspace.DescendantAdded:Connect(function(v)
+	removeDust(v)
+end)
 
 -- ===== XÓA MẢNH VỠ (DEBRIS) =====
-local function removeDebris(v)
-	if v:IsA("Part") or v:IsA("MeshPart") then
-		local name = v.Name:lower()
-		if name:find("debris") or name:find("mảnh") or name:find("vỡ") or name:find("shatter") 
-			or name:find("piece") or name:find("fragment") or name:find("chunk") then
-			v:Destroy()
+local debrisKeywords = {"debris", "mảnh", "vỡ", "shatter", "piece", "fragment", "chunk", "rubble", "scrap", "mảnh vụn"}
+
+local function isDebris(obj)
+	if obj:IsA("Part") or obj:IsA("MeshPart") then
+		local name = obj.Name:lower()
+		for _, keyword in ipairs(debrisKeywords) do
+			if name:find(keyword) then
+				return true
+			end
 		end
+		if obj.Size.X < 0.3 and obj.Size.Y < 0.3 and obj.Size.Z < 0.3 then
+			return true
+		end
+		if not obj.CanCollide and obj.Anchored == false then
+			return true
+		end
+	end
+	return false
+end
+
+local function removeDebris(v)
+	if isDebris(v) then
+		v:Destroy()
 	end
 end
 
@@ -58,8 +104,43 @@ for _, v in pairs(workspace:GetDescendants()) do
 end
 
 workspace.DescendantAdded:Connect(function(v)
-	task.wait(0.05) -- Chờ chút để object load xong
+	task.wait(0.05)
 	removeDebris(v)
 end)
 
--- ===== XÓA HIỆU ỨNG NỔ /
+-- ===== ẨN ĐẦU + CHÂN PHẢI =====
+local function hideParts(char)
+	while char.Parent do
+		local head = char:FindFirstChild("Head")
+		if head then
+			head.LocalTransparencyModifier = 1
+			local face = head:FindFirstChildWhichIsA("Decal")
+			if face then
+				face:Destroy()
+			end
+		end
+
+		local rightLeg = char:FindFirstChild("RightLowerLeg") 
+			or char:FindFirstChild("RightUpperLeg")
+			or char:FindFirstChild("Right Leg")
+		if rightLeg then
+			rightLeg.LocalTransparencyModifier = 1
+		end
+
+		task.wait(0.1)
+	end
+end
+
+local function onCharacter(char)
+	char:WaitForChild("Humanoid")
+	task.wait(0.1)
+	task.spawn(function()
+		hideParts(char)
+	end)
+end
+
+if player.Character then
+	onCharacter(player.Character)
+end
+
+player.CharacterAdded:Connect(onCharacter)

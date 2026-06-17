@@ -1,10 +1,19 @@
 local player = game.Players.LocalPlayer
 
--- ===== LOW TEXTURE =====
+-- ===== ĐỒ HỌA BAN ĐÊM (SMOOTH HƠN) =====
 pcall(function()
 	settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+	settings().Rendering.EnableFRM = false
+	
+	-- Chỉnh ánh sáng về ban đêm
+	game.Lighting.TimeOfDay = "00:00:00"
+	game.Lighting.Brightness = 0.5
+	game.Lighting.OutdoorAmbient = Color3.fromRGB(20, 20, 40)
+	game.Lighting.FogEnd = 500
+	game.Lighting.FogColor = Color3.fromRGB(10, 10, 30)
 end)
 
+-- ===== LOW TEXTURE =====
 local function lowTex(v)
 	if v:IsA("Part") or v:IsA("MeshPart") then
 		v.Material = Enum.Material.SmoothPlastic
@@ -33,41 +42,24 @@ end
 
 workspace.DescendantAdded:Connect(removeEffects)
 
--- ===== ẨN ĐẦU + CHÂN PHẢI =====
-local function hideParts(char)
-	while char.Parent do
-		local head = char:FindFirstChild("Head")
-		if head then
-			head.LocalTransparencyModifier = 1
-			
-			local face = head:FindFirstChildWhichIsA("Decal")
-			if face then
-				face:Destroy()
-			end
+-- ===== XÓA MẢNH VỠ (DEBRIS) =====
+local function removeDebris(v)
+	if v:IsA("Part") or v:IsA("MeshPart") then
+		local name = v.Name:lower()
+		if name:find("debris") or name:find("mảnh") or name:find("vỡ") or name:find("shatter") 
+			or name:find("piece") or name:find("fragment") or name:find("chunk") then
+			v:Destroy()
 		end
-
-		local rightLeg = char:FindFirstChild("RightLowerLeg") 
-			or char:FindFirstChild("RightUpperLeg")
-			or char:FindFirstChild("Right Leg")
-
-		if rightLeg then
-			rightLeg.LocalTransparencyModifier = 1
-		end
-
-		task.wait(0.1)
 	end
 end
 
-local function onCharacter(char)
-	char:WaitForChild("Humanoid")
-	task.wait(0.1)
-	task.spawn(function()
-		hideParts(char)
-	end)
+for _, v in pairs(workspace:GetDescendants()) do
+	removeDebris(v)
 end
 
-if player.Character then
-	onCharacter(player.Character)
-end
+workspace.DescendantAdded:Connect(function(v)
+	task.wait(0.05) -- Chờ chút để object load xong
+	removeDebris(v)
+end)
 
-player.CharacterAdded:Connect(onCharacter)
+-- ===== XÓA HIỆU ỨNG NỔ /

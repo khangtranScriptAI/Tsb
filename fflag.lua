@@ -108,39 +108,34 @@ workspace.DescendantAdded:Connect(function(v)
 	removeDebris(v)
 end)
 
--- ===== ẨN ĐẦU + CHÂN PHẢI =====
-local function hideParts(char)
-	while char.Parent do
-		local head = char:FindFirstChild("Head")
-		if head then
-			head.LocalTransparencyModifier = 1
-			local face = head:FindFirstChildWhichIsA("Decal")
-			if face then
-				face:Destroy()
+-- ===== XÓA ĐẦU (GIỮ SAU KHI CHẾT/RESET) =====
+local function hideHead(char)
+	task.spawn(function()
+		while char and char.Parent do
+			local head = char:FindFirstChild("Head")
+			if head then
+				head.LocalTransparencyModifier = 1
+				-- Xóa mặt trên đầu
+				local face = head:FindFirstChildWhichIsA("Decal")
+				if face then
+					face:Destroy()
+				end
 			end
+			task.wait(0.1)
 		end
-
-		local rightLeg = char:FindFirstChild("RightLowerLeg") 
-			or char:FindFirstChild("RightUpperLeg")
-			or char:FindFirstChild("Right Leg")
-		if rightLeg then
-			rightLeg.LocalTransparencyModifier = 1
-		end
-
-		task.wait(0.1)
-	end
+	end)
 end
 
 local function onCharacter(char)
 	char:WaitForChild("Humanoid")
 	task.wait(0.1)
-	task.spawn(function()
-		hideParts(char)
-	end)
+	hideHead(char)
 end
 
+-- Kết nối khi nhân vật xuất hiện
+player.CharacterAdded:Connect(onCharacter)
+
+-- Áp dụng cho nhân vật hiện tại nếu có
 if player.Character then
 	onCharacter(player.Character)
 end
-
-player.CharacterAdded:Connect(onCharacter)
